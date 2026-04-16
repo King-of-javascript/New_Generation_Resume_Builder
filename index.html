@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Resume Master — Full Builder</title>
+  <title>Resume Master — Full Builder (Updated)</title>
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Merriweather:wght@300;400;700&family=Roboto+Slab:wght@300;400;700&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
   <style>
     :root{
       --bg:#f4f6f8; --card:#fff; --accent:#2f8f6b; --muted:#6b7280;
-      --max-width:1100px; --radius:10px;
+      --max-width:1200px; --radius:10px;
     }
     *{box-sizing:border-box}
     body{font-family:Inter, system-ui, Arial, sans-serif; margin:0; background:var(--bg); color:#111}
@@ -28,7 +28,7 @@
     .btn{display:inline-block;background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;text-decoration:none;border:none;cursor:pointer}
     .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
     .btn.small{padding:6px 8px;font-size:.9rem}
-    .builder-grid{display:grid;grid-template-columns:1fr 480px;gap:18px;margin-top:18px}
+    .builder-grid{display:grid;grid-template-columns:1fr 520px;gap:18px;margin-top:18px}
     .card{background:var(--card);padding:14px;border-radius:var(--radius);box-shadow:0 6px 18px rgba(15,23,42,0.06)}
     form label{display:block;margin-bottom:8px;font-size:.95rem}
     input[type="text"], input[type="email"], input[type="tel"], textarea, select{
@@ -39,7 +39,7 @@
     .list-area > div{margin-bottom:12px}
     .skill-pill{display:inline-block;margin:4px;padding:6px 10px;background:#eef2ff;border-radius:999px;cursor:pointer}
     .preview-column{position:relative}
-    .resume-preview{background:var(--card);padding:18px;border-radius:8px;min-height:420px;overflow:auto}
+    .resume-preview{background:var(--card);padding:18px;border-radius:8px;min-height:520px;overflow:auto}
     .resume-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #eef;padding-bottom:10px;margin-bottom:12px}
     .resume-preview h2{margin:0}
     .meta{color:var(--muted);font-size:.9rem}
@@ -47,25 +47,31 @@
     .section h4{margin:0 0 6px 0;color:var(--accent)}
     .template-thumbs{display:flex;gap:8px;align-items:center}
     .thumb{width:72px;height:56px;border-radius:6px;border:1px solid #e6e9ee;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;background:#fff;cursor:pointer}
-    /* Template styles and print-optimized sizes */
-    .tpl-clean{font-family:Arial, sans-serif}
+    /* Template styles and print-optimized sizes (body ~11px) */
+    .tpl-clean .resume-preview{font-family:Arial, sans-serif}
     .tpl-clean .resume-preview{font-size:11px;line-height:1.25}
-    .tpl-clean .resume-preview h2{font-size:16px}
-    .tpl-clean .resume-preview .section h4{font-size:12px}
-    .tpl-modern{font-family:Inter, system-ui}
+    .tpl-clean .resume-preview h2{font-size:22px}
+    .tpl-clean .resume-preview .section h4{font-size:13px}
+    .tpl-modern .resume-preview{font-family:Inter, system-ui}
     .tpl-modern .resume-preview{font-size:11px;line-height:1.25}
-    .tpl-modern .resume-preview h2{font-size:18px}
-    .tpl-modern .resume-preview .section h4{font-size:12.5px}
-    .tpl-elegant{font-family:Merriweather, serif}
-    .tpl-elegant .resume-preview{font-size:11.5px;line-height:1.28}
-    .tpl-elegant .resume-preview h2{font-size:18px}
-    .tpl-compact{font-family:Inter, system-ui}
-    .tpl-compact .resume-preview{font-size:10px;line-height:1.12;padding:10px}
-    .tpl-compact .resume-header{gap:8px}
-    .tpl-compact .resume-preview h2{font-size:15px}
-    /* Compact two-column skills/contact for wider screens */
-    .tpl-compact .resume-header{display:flex;gap:12px}
-    .tpl-compact .contact-block{min-width:160px;text-align:right;font-size:10px}
+    .tpl-modern .resume-preview h2{font-size:24px}
+    .tpl-modern .resume-preview .section h4{font-size:13.5px}
+    .tpl-elegant .resume-preview{font-family:Merriweather, serif}
+    .tpl-elegant .resume-preview{font-size:11.2px;line-height:1.28}
+    .tpl-elegant .resume-preview h2{font-size:24px}
+    .tpl-elegant .resume-preview .section h4{font-size:13.5px}
+    /* Compact one-page */
+    .tpl-compact .resume-preview{font-family:Inter, system-ui; font-size:10px; line-height:1.12; padding:12px}
+    .tpl-compact .resume-preview h2{font-size:20px}
+    .tpl-compact .resume-preview .section h4{font-size:12px}
+    /* Two-column with colored sidebar template */
+    .tpl-sidebar .resume-preview{display:flex;gap:18px;padding:0}
+    .tpl-sidebar .sidebar{width:180px;background:linear-gradient(180deg,#0f172a,#1f2937);color:#fff;padding:18px;border-top-left-radius:8px;border-bottom-left-radius:8px}
+    .tpl-sidebar .sidebar h3{margin:0 0 8px 0;font-size:14px}
+    .tpl-sidebar .sidebar .meta{color:#d1d5db;font-size:12px}
+    .tpl-sidebar .main{flex:1;background:#fff;padding:18px;border-top-right-radius:8px;border-bottom-right-radius:8px}
+    .tpl-sidebar .main h2{font-size:22px;margin:0}
+    .tpl-sidebar .main .meta{color:#444}
     /* Tight spacing */
     .resume-preview{padding:14px}
     .resume-header{padding-bottom:6px;margin-bottom:8px}
@@ -77,6 +83,9 @@
     @media (max-width:980px){
       .builder-grid{grid-template-columns:1fr}
       .preview-column{order:-1}
+      .tpl-sidebar .resume-preview{flex-direction:column}
+      .tpl-sidebar .sidebar{width:100%;border-radius:8px 8px 0 0}
+      .tpl-sidebar .main{border-radius:0 0 8px 8px}
     }
     /* Print */
     @media print{
@@ -159,12 +168,14 @@
               <option value="clean">Clean</option>
               <option value="modern">Modern</option>
               <option value="elegant">Elegant</option>
+              <option value="sidebar">Two-column Sidebar</option>
               <option value="compact">Compact (one page)</option>
             </select>
             <div class="template-thumbs" aria-hidden="true">
               <div class="thumb" data-tpl="clean">Clean</div>
               <div class="thumb" data-tpl="modern">Modern</div>
               <div class="thumb" data-tpl="elegant">Elegant</div>
+              <div class="thumb" data-tpl="sidebar">Sidebar</div>
               <div class="thumb" data-tpl="compact">Compact</div>
             </div>
           </div>
@@ -177,6 +188,7 @@
             <button type="button" id="mapCsvBtn" class="btn ghost">Map CSV</button>
             <button type="button" id="resetBtn" class="btn ghost">Reset</button>
             <button type="button" id="clearStorage" class="btn small">Clear Autosave</button>
+            <button type="button" id="downloadBackup" class="btn small ghost">Download Backup</button>
           </div>
         </form>
       </section>
@@ -238,8 +250,9 @@
     const mappingFields = document.getElementById('mappingFields');
     const applyMapping = document.getElementById('applyMapping');
     const closeMapping = document.getElementById('closeMapping');
+    const downloadBackup = document.getElementById('downloadBackup');
 
-    const LS_KEY = 'resume_master_full_v1';
+    const LS_KEY = 'resume_master_full_v2';
 
     // Data model
     let data = {
@@ -325,56 +338,106 @@
 
     function renderPreview(){
       const tpl = data.meta.template || 'clean';
-      preview.className = 'resume-preview tpl-' + (tpl === 'compact' ? 'compact' : tpl);
-      // Contact block for compact template
-      const contactBlock = tpl === 'compact' ? `<div class="contact-block">
-        <div>${escapeHtml(data.basics.email || '')}</div>
-        <div>${escapeHtml(data.basics.phone || '')}</div>
-      </div>` : `<div class="meta" style="text-align:right">
-        <div>${escapeHtml(data.basics.email || '')}</div>
-        <div>${escapeHtml(data.basics.phone || '')}</div>
-      </div>`;
-
-      preview.innerHTML = `
-        <div class="resume-header">
-          <div>
-            <h2>${escapeHtml(data.basics.name || 'Your Name')}</h2>
+      // set class on preview wrapper for template styling
+      preview.className = 'resume-preview tpl-' + (tpl === 'sidebar' ? 'sidebar' : (tpl === 'compact' ? 'compact' : tpl));
+      // Build HTML depending on template
+      if (tpl === 'sidebar') {
+        preview.innerHTML = `
+          <div class="sidebar">
+            <h3>${escapeHtml(data.basics.name || 'Your Name')}</h3>
             <div class="meta">${escapeHtml(data.basics.title || '')}</div>
+            <hr style="border-color:rgba(255,255,255,0.08);margin:10px 0"/>
+            <div class="meta">${escapeHtml(data.basics.email || '')}</div>
+            <div class="meta">${escapeHtml(data.basics.phone || '')}</div>
+            <hr style="border-color:rgba(255,255,255,0.08);margin:10px 0"/>
+            <h3 style="margin-top:6px">Skills</h3>
+            <div>${data.skills.map(s=>`<div style="margin:6px 0;padding:6px;background:rgba(255,255,255,0.06);border-radius:6px">${escapeHtml(s)}</div>`).join('')}</div>
           </div>
-          ${contactBlock}
-        </div>
-
-        <div class="section">
-          <h4>Summary</h4>
-          <div class="item">${nl2br(data.basics.summary || 'A short professional summary.')}</div>
-        </div>
-
-        <div class="section">
-          <h4>Experience</h4>
-          ${data.experiences.map(e => `
-            <div class="item">
-              <strong>${escapeHtml(e.role || '')}</strong> — ${escapeHtml(e.company || '')}
-              <div class="meta">${escapeHtml(e.period || '')}</div>
-              <div>${renderDetailsAsList(e.details || '')}</div>
+          <div class="main">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+              <div>
+                <h2 style="margin:0">${escapeHtml(data.basics.name || 'Your Name')}</h2>
+                <div class="meta">${escapeHtml(data.basics.title || '')}</div>
+              </div>
+              <div style="text-align:right;color:#666;font-size:12px">
+                <div>${escapeHtml(data.basics.email || '')}</div>
+                <div>${escapeHtml(data.basics.phone || '')}</div>
+              </div>
             </div>
-          `).join('')}
-        </div>
 
-        <div class="section">
-          <h4>Education</h4>
-          ${data.educations.map(ed => `
-            <div class="item">
-              <strong>${escapeHtml(ed.degree || '')}</strong> — ${escapeHtml(ed.institution || '')}
-              <div class="meta">${escapeHtml(ed.period || '')}</div>
+            <div class="section">
+              <h4>Summary</h4>
+              <div class="item">${nl2br(data.basics.summary || 'A short professional summary.')}</div>
             </div>
-          `).join('')}
-        </div>
 
-        <div class="section">
-          <h4>Skills</h4>
-          <div class="item">${data.skills.map(s => `<span style="display:inline-block;margin:4px;padding:6px 8px;background:#f3f4f6;border-radius:12px">${escapeHtml(s)}</span>`).join('')}</div>
-        </div>
-      `;
+            <div class="section">
+              <h4>Experience</h4>
+              ${data.experiences.map(e => `
+                <div class="item">
+                  <strong>${escapeHtml(e.role || '')}</strong> — ${escapeHtml(e.company || '')}
+                  <div class="meta">${escapeHtml(e.period || '')}</div>
+                  <div>${renderDetailsAsList(e.details || '')}</div>
+                </div>
+              `).join('')}
+            </div>
+
+            <div class="section">
+              <h4>Education</h4>
+              ${data.educations.map(ed => `
+                <div class="item">
+                  <strong>${escapeHtml(ed.degree || '')}</strong> — ${escapeHtml(ed.institution || '')}
+                  <div class="meta">${escapeHtml(ed.period || '')}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      } else {
+        // default templates (clean, modern, elegant, compact)
+        preview.innerHTML = `
+          <div class="resume-header">
+            <div>
+              <h2>${escapeHtml(data.basics.name || 'Your Name')}</h2>
+              <div class="meta">${escapeHtml(data.basics.title || '')}</div>
+            </div>
+            <div class="meta" style="text-align:right">
+              <div>${escapeHtml(data.basics.email || '')}</div>
+              <div>${escapeHtml(data.basics.phone || '')}</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h4>Summary</h4>
+            <div class="item">${nl2br(data.basics.summary || 'A short professional summary.')}</div>
+          </div>
+
+          <div class="section">
+            <h4>Experience</h4>
+            ${data.experiences.map(e => `
+              <div class="item">
+                <strong>${escapeHtml(e.role || '')}</strong> — ${escapeHtml(e.company || '')}
+                <div class="meta">${escapeHtml(e.period || '')}</div>
+                <div>${renderDetailsAsList(e.details || '')}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="section">
+            <h4>Education</h4>
+            ${data.educations.map(ed => `
+              <div class="item">
+                <strong>${escapeHtml(ed.degree || '')}</strong> — ${escapeHtml(ed.institution || '')}
+                <div class="meta">${escapeHtml(ed.period || '')}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="section">
+            <h4>Skills</h4>
+            <div class="item">${data.skills.map(s => `<span style="display:inline-block;margin:4px;padding:6px 8px;background:#f3f4f6;border-radius:12px">${escapeHtml(s)}</span>`).join('')}</div>
+          </div>
+        `;
+      }
     }
 
     // Wire events immediately
@@ -426,6 +489,7 @@
         });
       });
 
+      // Support Shift+Enter in details to insert newline (browsers do by default), no extra handling needed.
       // Skills input
       skillInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -442,14 +506,14 @@
       // Template selector & thumbs
       templateSelect.addEventListener('change', () => {
         const val = templateSelect.value;
-        data.meta.template = val === 'compact' ? 'compact' : val;
+        data.meta.template = val === 'sidebar' ? 'sidebar' : (val === 'compact' ? 'compact' : val);
         save(); renderPreview();
       });
       document.querySelectorAll('.thumb').forEach(t => {
         t.addEventListener('click', () => {
           const tpl = t.dataset.tpl;
-          templateSelect.value = tpl === 'compact' ? 'compact' : tpl;
-          data.meta.template = tpl === 'compact' ? 'compact' : tpl;
+          templateSelect.value = tpl;
+          data.meta.template = tpl;
           save(); renderPreview();
         });
       });
@@ -598,6 +662,7 @@
           clone.style.boxShadow = 'none';
           clone.style.margin = '0';
           clone.style.background = '#fff';
+          clone.style.width = preview.offsetWidth + 'px';
           document.body.appendChild(clone);
           await html2pdf().set(opt).from(clone).save();
           clone.remove();
@@ -617,6 +682,16 @@
         if (!confirm('Clear autosaved data from this browser?')) return;
         localStorage.removeItem(LS_KEY);
         alert('Autosave cleared.');
+      });
+
+      // Download backup (manual)
+      downloadBackup.addEventListener('click', () => {
+        const payload = JSON.stringify(data, null, 2);
+        const blob = new Blob([payload], {type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = (data.basics.name || 'resume-backup') + '.json';
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
       });
 
       // Load sample
@@ -730,7 +805,7 @@
       email.value = data.basics.email || '';
       phone.value = data.basics.phone || '';
       summary.value = data.basics.summary || '';
-      templateSelect.value = data.meta.template === 'compact' ? 'compact' : (data.meta.template || 'clean');
+      templateSelect.value = data.meta.template || 'clean';
       renderExperiences(); renderEducations(); renderSkills(); renderPreview();
     }
 
@@ -739,8 +814,11 @@
       load();
       wireImmediate();
       renderAll();
-      setInterval(save, 2000);
+      // Autosave: every 3 seconds and on blur/unload
+      setInterval(save, 3000);
       window.addEventListener('beforeunload', save);
+      // Save on blur of inputs to ensure quick persistence
+      document.querySelectorAll('input,textarea,select').forEach(el => el.addEventListener('blur', save));
     }
 
     init();
