@@ -6,99 +6,60 @@
 <title>Resume Builder Pro</title>
 
 <style>
-body {
-    margin: 0;
-    font-family: Arial;
-    background: #eef1f5;
+body { margin:0; font-family:Arial; background:#eef1f5; }
+.container { display:flex; height:100vh; }
+
+.form { width:40%; padding:20px; overflow:auto; }
+.preview { width:60%; background:#ccc; display:flex; justify-content:center; padding:20px; }
+
+.card { background:white; padding:15px; margin-bottom:15px; border-radius:8px; }
+
+input, textarea, select {
+    width:100%; padding:8px; margin:5px 0;
 }
 
-/* LAYOUT */
-.container {
-    display: flex;
-    height: 100vh;
-}
-
-.form {
-    width: 45%;
-    padding: 20px;
-    overflow-y: auto;
-}
-
-.preview {
-    width: 55%;
-    background: #ccc;
-    display: flex;
-    justify-content: center;
-    padding: 20px;
-}
-
-/* CARD */
-.card {
-    background: white;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 8px;
-}
-
-/* INPUT */
-input, textarea {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    margin-bottom: 10px;
-}
-
-/* BUTTONS */
 button {
-    padding: 8px 12px;
-    margin: 5px 2px;
-    border: none;
-    cursor: pointer;
-    background: #2563eb;
-    color: white;
+    padding:8px 12px;
+    background:#2563eb;
+    color:white;
+    border:none;
+    margin:5px 2px;
+    cursor:pointer;
 }
 
-.delete-btn {
-    background: red;
-}
+.delete-btn { background:red; }
 
-/* RESUME STYLE */
+/* TEMPLATE BASE */
 .resume {
-    width: 794px; /* A4 width */
-    min-height: 1123px;
-    background: white;
-    padding: 40px;
+    width:794px;
+    min-height:1123px;
+    background:white;
+    padding:40px;
 }
 
-.resume h1 {
-    margin: 0;
+/* TEMPLATE 1 (CLASSIC) */
+.classic h1 { margin:0; }
+.classic .section { margin-top:20px; }
+.classic .section h3 { border-bottom:2px solid black; }
+
+/* TEMPLATE 2 (MODERN) */
+.modern {
+    font-family: 'Segoe UI';
+}
+.modern h1 {
+    color:#2563eb;
+}
+.modern .section h3 {
+    color:#2563eb;
+    border-left:5px solid #2563eb;
+    padding-left:8px;
 }
 
-.section {
-    margin-top: 20px;
-}
-
-.section h3 {
-    border-bottom: 2px solid black;
-    padding-bottom: 5px;
-}
-
-/* PRINT FIX */
+/* PRINT */
 @media print {
-    body * {
-        visibility: hidden;
-    }
-
-    .resume, .resume * {
-        visibility: visible;
-    }
-
-    .resume {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-    }
+    body * { visibility:hidden; }
+    .resume, .resume * { visibility:visible; }
+    .resume { position:absolute; left:0; top:0; width:100%; }
 }
 </style>
 </head>
@@ -111,8 +72,16 @@ button {
 <div class="form">
 
 <div class="card">
-<h3>Personal Info</h3>
-<input id="name" placeholder="Full Name">
+<h3>Template</h3>
+<select id="template">
+<option value="classic">Classic</option>
+<option value="modern">Modern</option>
+</select>
+</div>
+
+<div class="card">
+<h3>Personal</h3>
+<input id="name" placeholder="Name">
 <input id="email" placeholder="Email">
 </div>
 
@@ -140,75 +109,83 @@ button {
 
 <!-- PREVIEW -->
 <div class="preview">
-<div class="resume" id="output"></div>
+<div id="output" class="resume"></div>
 </div>
 
 </div>
 
 <script>
-let eduCount = 0;
-let expCount = 0;
+let eduCount=0, expCount=0;
 
-function addEdu() {
+/* AUTO SAVE */
+document.addEventListener("input", ()=>{
+    localStorage.setItem("resumeData", JSON.stringify({
+        name: name.value,
+        email: email.value,
+        skills: skills.value,
+        template: template.value
+    }));
+});
+
+/* LOAD */
+window.onload = ()=>{
+    let data = JSON.parse(localStorage.getItem("resumeData")||"{}");
+    if(data.name) name.value = data.name;
+    if(data.email) email.value = data.email;
+    if(data.skills) skills.value = data.skills;
+    if(data.template) template.value = data.template;
+}
+
+/* ADD/REMOVE */
+function addEdu(){
     eduCount++;
-    document.getElementById("edu").innerHTML += `
-        <div id="edu${eduCount}">
-            <input id="school${eduCount}" placeholder="School">
-            <input id="year${eduCount}" placeholder="Year">
-            <button class="delete-btn" onclick="removeEdu(${eduCount})">Delete</button>
-        </div>
-    `;
+    edu.innerHTML += `
+    <div id="edu${eduCount}">
+        <input id="school${eduCount}" placeholder="School">
+        <input id="year${eduCount}" placeholder="Year">
+        <button class="delete-btn" onclick="removeEdu(${eduCount})">Delete</button>
+    </div>`;
 }
+function removeEdu(id){ document.getElementById("edu"+id)?.remove(); }
 
-function removeEdu(id) {
-    document.getElementById("edu"+id).remove();
-}
-
-function addExp() {
+function addExp(){
     expCount++;
-    document.getElementById("exp").innerHTML += `
-        <div id="exp${expCount}">
-            <input id="company${expCount}" placeholder="Company">
-            <textarea id="desc${expCount}" placeholder="Details"></textarea>
-            <button class="delete-btn" onclick="removeExp(${expCount})">Delete</button>
-        </div>
-    `;
+    exp.innerHTML += `
+    <div id="exp${expCount}">
+        <input id="company${expCount}" placeholder="Company">
+        <textarea id="desc${expCount}"></textarea>
+        <button class="delete-btn" onclick="removeExp(${expCount})">Delete</button>
+    </div>`;
 }
+function removeExp(id){ document.getElementById("exp"+id)?.remove(); }
 
-function removeExp(id) {
-    document.getElementById("exp"+id).remove();
-}
+/* GENERATE */
+function generate(){
+    let tpl = template.value;
 
-function generate() {
-    let name = document.getElementById("name").value;
-    let email = document.getElementById("email").value;
-    let skills = document.getElementById("skills").value;
+    let eduHTML="", expHTML="";
 
-    let eduHTML = "";
-    for (let i = 1; i <= eduCount; i++) {
-        let school = document.getElementById("school"+i);
-        let year = document.getElementById("year"+i);
-        if (school && year) {
-            eduHTML += `<p><b>${school.value}</b> (${year.value})</p>`;
-        }
+    for(let i=1;i<=eduCount;i++){
+        let s=document.getElementById("school"+i);
+        let y=document.getElementById("year"+i);
+        if(s&&y) eduHTML+=`<p><b>${s.value}</b> (${y.value})</p>`;
     }
 
-    let expHTML = "";
-    for (let i = 1; i <= expCount; i++) {
-        let company = document.getElementById("company"+i);
-        let desc = document.getElementById("desc"+i);
-        if (company && desc) {
-            expHTML += `<p><b>${company.value}</b><br>${desc.value}</p>`;
-        }
+    for(let i=1;i<=expCount;i++){
+        let c=document.getElementById("company"+i);
+        let d=document.getElementById("desc"+i);
+        if(c&&d) expHTML+=`<p><b>${c.value}</b><br>${d.value}</p>`;
     }
 
-    document.getElementById("output").innerHTML = `
-        <h1>${name}</h1>
-        <p>${email}</p>
+    output.className = "resume " + tpl;
+
+    output.innerHTML = `
+        <h1>${name.value}</h1>
+        <p>${email.value}</p>
 
         <div class="section">
             <h3>Skills</h3>
-            <p>${skills}</p>
+            <p>${skills.value}</p>
         </div>
 
         <div class="section">
