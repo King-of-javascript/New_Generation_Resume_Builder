@@ -1,148 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resume Master - Front Page</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-            position: relative;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume Master</title>
 
-        .navbar {
-            background-color: #333;
-            color: #fff;
-            padding: 10px;
-        }
+<style>
+body {
+    font-family: Arial;
+    margin: 0;
+    background: #f4f4f4;
+}
 
-        .navbar ul {
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-        }
+.navbar {
+    background: #333;
+    padding: 10px;
+    text-align: center;
+}
 
-        .navbar ul li {
-            display: inline;
-            margin-right: 10px;
-        }
+.navbar a {
+    color: white;
+    margin: 0 10px;
+    text-decoration: none;
+}
 
-        .navbar ul li a {
-            color: #fff;
-            text-decoration: none;
-        }
+.header {
+    background: #4CAF50;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
 
-        .header {
-            background-color: #4CAF50;
-            color: white;
-            padding: 20px;
-        }
+.container {
+    display: flex;
+    flex-wrap: wrap;
+}
 
-        .header h1 {
-            margin: 0;
-            font-size: 2.5em;
-        }
+.form-section, .preview-section {
+    width: 50%;
+    padding: 20px;
+}
 
-        .header div {
-            font-size: 1.5em;
-            color: #fff;
-            font-weight: bold;
-        }
+input, textarea {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+}
 
-        .features {
-            margin: 20px auto;
-            padding: 20px;
-            max-width: 800px;
-        }
+button {
+    padding: 10px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    margin: 5px 0;
+    cursor: pointer;
+}
 
-        .feature {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
-        }
-
-        .feature h3 {
-            margin-top: 0;
-        }
-
-        .cta-button {
-            display: inline-block;
-            background-color: #4CAF50;
-            color: #fff;
-            padding: 15px 25px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-size: 1.2em;
-            margin-top: 20px;
-            border: 2px solid #4CAF50;
-        }
-
-        .cta-button:hover {
-            background-color: #45a049;
-        }
-
-        .cta-button-container {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-        }
-    </style>
+.preview-box {
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+}
+</style>
 </head>
+
 <body>
-    <header class="navbar">
-        <nav>
-            <ul>
-                <li><a href="index2.html#home">Home</a></li>
-                <li><a href="index1/index1.html#resume">Resume</a></li>
-                <li><a href="index1/index1.html#contact">Contact</a></li>
-            </ul>
-        </nav>
-    </header>
 
-    <div class="header">
-        <h1>RESUME MASTER</h1>
-        <div>Your Career, Our Expertise</div>
-    </div>
+<div class="navbar">
+    <a href="#form">Create</a>
+    <a href="#preview">Preview</a>
+</div>
 
-    <section class="features">
-        <div class="feature">
-            <h3>Instant Preview</h3>
-            <p>See a live preview of your resume as you fill out the form, so you know exactly how it will look once completed.</p>
-        </div>
-        <div class="feature">
-            <h3>Customizable Sections</h3>
-            <p>Easily add multiple education and work experience sections to tailor your resume to your unique background.</p>
-        </div>
-        <div class="feature">
-            <h3>Help Text & Placeholders</h3>
-            <p>Receive clear guidance with tooltips and placeholders to make data entry straightforward and intuitive.</p>
-        </div>
-        <div class="feature">
-            <h3>Auto-Save Suggestions</h3>
-            <p>Benefit from auto-saving and memory features that suggest previously entered information to save you time.</p>
-        </div>
-        <div class="feature">
-            <h3>Professional Output</h3>
-            <p>Generate a polished and professional resume that highlights your skills, experiences, and achievements effectively.</p>
-        </div>
+<div class="header">
+    <h1>Resume Master</h1>
+    <p>Build your professional resume instantly</p>
+</div>
 
-        <div class="cta-button-container">
-            <a href="index1/index1.html" class="cta-button">Create My Resume</a>
-        </div>
-    </section>
+<div class="container">
 
-    <footer class="footer">
-        <p>&copy; 2024 Resume Master. All rights reserved.</p>
-    </footer>
+<!-- FORM -->
+<div class="form-section" id="form">
+    <h2>Fill Details</h2>
 
-    <script src="js/script.js"></script>
+    <input type="text" id="name" placeholder="Full Name">
+    <input type="text" id="email" placeholder="Email">
+    <textarea id="skills" placeholder="Skills"></textarea>
+
+    <h3>Education</h3>
+    <div id="education"></div>
+    <button onclick="addEducation()">+ Add Education</button>
+
+    <h3>Experience</h3>
+    <div id="experience"></div>
+    <button onclick="addExperience()">+ Add Experience</button>
+
+    <br><br>
+    <button onclick="generateResume()">Generate Resume</button>
+    <button onclick="window.print()">Download PDF</button>
+</div>
+
+<!-- PREVIEW -->
+<div class="preview-section" id="preview">
+    <h2>Preview</h2>
+    <div class="preview-box" id="output"></div>
+</div>
+
+</div>
+
+<script>
+let eduCount = 0;
+let expCount = 0;
+
+function addEducation() {
+    eduCount++;
+    document.getElementById("education").innerHTML += `
+        <input type="text" placeholder="School" id="school${eduCount}">
+        <input type="text" placeholder="Year" id="year${eduCount}">
+    `;
+}
+
+function addExperience() {
+    expCount++;
+    document.getElementById("experience").innerHTML += `
+        <input type="text" placeholder="Company" id="company${expCount}">
+        <textarea placeholder="Details" id="exp${expCount}"></textarea>
+    `;
+}
+
+function generateResume() {
+    let name = document.getElementById("name").value;
+    let email = document.getElementById("email").value;
+    let skills = document.getElementById("skills").value;
+
+    let eduHTML = "";
+    for (let i = 1; i <= eduCount; i++) {
+        eduHTML += `<p><b>${document.getElementById("school"+i).value}</b> (${document.getElementById("year"+i).value})</p>`;
+    }
+
+    let expHTML = "";
+    for (let i = 1; i <= expCount; i++) {
+        expHTML += `<p><b>${document.getElementById("company"+i).value}</b><br>${document.getElementById("exp"+i).value}</p>`;
+    }
+
+    document.getElementById("output").innerHTML = `
+        <h2>${name}</h2>
+        <p>${email}</p>
+
+        <h3>Skills</h3>
+        <p>${skills}</p>
+
+        <h3>Education</h3>
+        ${eduHTML}
+
+        <h3>Experience</h3>
+        ${expHTML}
+    `;
+}
+</script>
+
 </body>
 </html>
