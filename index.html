@@ -3,106 +3,151 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Resume Master</title>
+<title>Resume Builder Pro</title>
 
 <style>
-body {
-    font-family: Arial;
+* {
+    box-sizing: border-box;
     margin: 0;
-    background: #f4f4f4;
+    font-family: 'Segoe UI', sans-serif;
 }
 
+body {
+    background: #eef1f5;
+}
+
+/* NAVBAR */
 .navbar {
-    background: #333;
-    padding: 10px;
-    text-align: center;
-}
-
-.navbar a {
+    background: #111827;
     color: white;
-    margin: 0 10px;
-    text-decoration: none;
+    padding: 15px 30px;
+    font-weight: bold;
+    font-size: 18px;
 }
 
-.header {
-    background: #4CAF50;
-    color: white;
-    padding: 20px;
-    text-align: center;
-}
-
+/* LAYOUT */
 .container {
     display: flex;
-    flex-wrap: wrap;
+    height: calc(100vh - 60px);
 }
 
-.form-section, .preview-section {
+/* FORM SIDE */
+.form {
     width: 50%;
-    padding: 20px;
+    padding: 25px;
+    overflow-y: auto;
 }
 
+/* PREVIEW SIDE */
+.preview {
+    width: 50%;
+    background: #dfe6ee;
+    display: flex;
+    justify-content: center;
+    align-items: start;
+    padding: 30px;
+}
+
+/* CARD */
+.card {
+    background: white;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+/* INPUTS */
 input, textarea {
     width: 100%;
-    margin-bottom: 10px;
-    padding: 8px;
+    padding: 10px;
+    margin-top: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
 }
 
+/* BUTTONS */
 button {
+    margin-top: 10px;
     padding: 10px;
-    background: #4CAF50;
-    color: white;
     border: none;
-    margin: 5px 0;
+    background: #2563eb;
+    color: white;
+    border-radius: 6px;
     cursor: pointer;
 }
 
-.preview-box {
+button:hover {
+    background: #1d4ed8;
+}
+
+/* RESUME PREVIEW */
+.resume {
     background: white;
-    padding: 20px;
-    border-radius: 5px;
+    width: 100%;
+    max-width: 700px;
+    padding: 30px;
+    border-radius: 10px;
+}
+
+.resume h1 {
+    margin-bottom: 5px;
+}
+
+.section {
+    margin-top: 20px;
+}
+
+.section h3 {
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="navbar">
-    <a href="#form">Create</a>
-    <a href="#preview">Preview</a>
-</div>
-
-<div class="header">
-    <h1>Resume Master</h1>
-    <p>Build your professional resume instantly</p>
-</div>
+<div class="navbar">Resume Builder Pro</div>
 
 <div class="container">
 
 <!-- FORM -->
-<div class="form-section" id="form">
-    <h2>Fill Details</h2>
+<div class="form">
 
-    <input type="text" id="name" placeholder="Full Name">
-    <input type="text" id="email" placeholder="Email">
-    <textarea id="skills" placeholder="Skills"></textarea>
+<div class="card">
+<h3>Personal Info</h3>
+<input id="name" placeholder="Full Name">
+<input id="email" placeholder="Email">
+</div>
 
-    <h3>Education</h3>
-    <div id="education"></div>
-    <button onclick="addEducation()">+ Add Education</button>
+<div class="card">
+<h3>Skills</h3>
+<textarea id="skills" placeholder="e.g. JavaScript, Leadership"></textarea>
+</div>
 
-    <h3>Experience</h3>
-    <div id="experience"></div>
-    <button onclick="addExperience()">+ Add Experience</button>
+<div class="card">
+<h3>Education</h3>
+<div id="edu"></div>
+<button onclick="addEdu()">+ Add Education</button>
+</div>
 
-    <br><br>
-    <button onclick="generateResume()">Generate Resume</button>
-    <button onclick="window.print()">Download PDF</button>
+<div class="card">
+<h3>Experience</h3>
+<div id="exp"></div>
+<button onclick="addExp()">+ Add Experience</button>
+</div>
+
+<button onclick="generate()">Generate Resume</button>
+<button onclick="window.print()">Download PDF</button>
+
 </div>
 
 <!-- PREVIEW -->
-<div class="preview-section" id="preview">
-    <h2>Preview</h2>
-    <div class="preview-box" id="output"></div>
+<div class="preview">
+<div class="resume" id="output">
+<h2>Your resume will appear here</h2>
+</div>
 </div>
 
 </div>
@@ -111,23 +156,23 @@ button {
 let eduCount = 0;
 let expCount = 0;
 
-function addEducation() {
+function addEdu() {
     eduCount++;
-    document.getElementById("education").innerHTML += `
-        <input type="text" placeholder="School" id="school${eduCount}">
-        <input type="text" placeholder="Year" id="year${eduCount}">
+    document.getElementById("edu").innerHTML += `
+        <input placeholder="School" id="school${eduCount}">
+        <input placeholder="Year" id="year${eduCount}">
     `;
 }
 
-function addExperience() {
+function addExp() {
     expCount++;
-    document.getElementById("experience").innerHTML += `
-        <input type="text" placeholder="Company" id="company${expCount}">
+    document.getElementById("exp").innerHTML += `
+        <input placeholder="Company" id="company${expCount}">
         <textarea placeholder="Details" id="exp${expCount}"></textarea>
     `;
 }
 
-function generateResume() {
+function generate() {
     let name = document.getElementById("name").value;
     let email = document.getElementById("email").value;
     let skills = document.getElementById("skills").value;
@@ -143,17 +188,23 @@ function generateResume() {
     }
 
     document.getElementById("output").innerHTML = `
-        <h2>${name}</h2>
+        <h1>${name}</h1>
         <p>${email}</p>
 
-        <h3>Skills</h3>
-        <p>${skills}</p>
+        <div class="section">
+            <h3>Skills</h3>
+            <p>${skills}</p>
+        </div>
 
-        <h3>Education</h3>
-        ${eduHTML}
+        <div class="section">
+            <h3>Education</h3>
+            ${eduHTML}
+        </div>
 
-        <h3>Experience</h3>
-        ${expHTML}
+        <div class="section">
+            <h3>Experience</h3>
+            ${expHTML}
+        </div>
     `;
 }
 </script>
