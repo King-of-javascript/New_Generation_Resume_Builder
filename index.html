@@ -1,205 +1,590 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Resume Builder Pro</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Resume Master — Single File Builder</title>
 
-<style>
-body { margin:0; font-family:Arial; background:#eef1f5; }
-.container { display:flex; height:100vh; }
+  <!-- Google Fonts for templates -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Merriweather:wght@300;400;700&family=Roboto+Slab:wght@300;400;700&display=swap" rel="stylesheet">
 
-.form { width:40%; padding:20px; overflow:auto; }
-.preview { width:60%; background:#ccc; display:flex; justify-content:center; padding:20px; }
+  <!-- External libs (CDN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.2/papaparse.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 
-.card { background:white; padding:15px; margin-bottom:15px; border-radius:8px; }
-
-input, textarea, select {
-    width:100%; padding:8px; margin:5px 0;
-}
-
-button {
-    padding:8px 12px;
-    background:#2563eb;
-    color:white;
-    border:none;
-    margin:5px 2px;
-    cursor:pointer;
-}
-
-.delete-btn { background:red; }
-
-/* TEMPLATE BASE */
-.resume {
-    width:794px;
-    min-height:1123px;
-    background:white;
-    padding:40px;
-}
-
-/* TEMPLATE 1 (CLASSIC) */
-.classic h1 { margin:0; }
-.classic .section { margin-top:20px; }
-.classic .section h3 { border-bottom:2px solid black; }
-
-/* TEMPLATE 2 (MODERN) */
-.modern {
-    font-family: 'Segoe UI';
-}
-.modern h1 {
-    color:#2563eb;
-}
-.modern .section h3 {
-    color:#2563eb;
-    border-left:5px solid #2563eb;
-    padding-left:8px;
-}
-
-/* PRINT */
-@media print {
-    body * { visibility:hidden; }
-    .resume, .resume * { visibility:visible; }
-    .resume { position:absolute; left:0; top:0; width:100%; }
-}
-</style>
+  <style>
+    :root{
+      --bg:#f4f6f8; --card:#fff; --accent:#2f8f6b; --muted:#6b7280;
+      --max-width:1100px; --radius:10px;
+    }
+    *{box-sizing:border-box}
+    body{font-family:Inter, system-ui, Arial, sans-serif; margin:0; background:var(--bg); color:#111}
+    .container{max-width:var(--max-width); margin:0 auto; padding:18px}
+    header{background:#111;color:#fff;padding:14px 18px;border-bottom:4px solid var(--accent)}
+    header h1{margin:0;font-size:1.2rem}
+    .top-row{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .btn{display:inline-block;background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;text-decoration:none;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+    .btn.small{padding:6px 8px;font-size:.9rem}
+    .builder-grid{display:grid;grid-template-columns:1fr 420px;gap:18px;margin-top:18px}
+    .card{background:var(--card);padding:14px;border-radius:var(--radius);box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+    form label{display:block;margin-bottom:8px;font-size:.95rem}
+    input[type="text"], input[type="email"], input[type="tel"], textarea, select{
+      width:100%;padding:8px;border:1px solid #e6e9ee;border-radius:8px;margin-top:6px;font-size:0.95rem
+    }
+    textarea{resize:vertical}
+    .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .list-area > div{margin-bottom:12px}
+    .skill-pill{display:inline-block;margin:4px;padding:6px 10px;background:#eef2ff;border-radius:999px;cursor:pointer}
+    .preview-column{position:relative}
+    .resume-preview{background:var(--card);padding:18px;border-radius:8px;min-height:420px;overflow:auto}
+    .resume-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #eef2f3;padding-bottom:10px;margin-bottom:12px}
+    .resume-preview h2{margin:0}
+    .meta{color:var(--muted);font-size:.9rem}
+    .section{margin-bottom:12px}
+    .section h4{margin:0 0 6px 0;color:var(--accent)}
+    .template-thumbs{display:flex;gap:8px;align-items:center}
+    .thumb{width:72px;height:56px;border-radius:6px;border:1px solid #e6e9ee;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;background:#fff}
+    /* Template styles */
+    .tpl-clean{font-family:Arial, sans-serif}
+    .tpl-modern{font-family:Inter, system-ui}
+    .tpl-elegant{font-family:Merriweather, serif}
+    .tpl-clean .resume-header{border-color:#f0f0f0}
+    .tpl-modern h2{color:#0f172a}
+    .tpl-elegant h2{font-family:Merriweather, serif;color:#111}
+    /* Responsive */
+    @media (max-width:980px){
+      .builder-grid{grid-template-columns:1fr}
+      .preview-column{order:-1}
+    }
+    /* Print */
+    @media print{
+      body{background:#fff}
+      header, .form-actions, .controls, .btn, .top-row a, .import-area{display:none}
+      .builder-grid{grid-template-columns:1fr}
+      .resume-preview{box-shadow:none;border-radius:0;padding:0}
+    }
+  </style>
 </head>
-
 <body>
+  <header>
+    <div class="container top-row">
+      <div>
+        <h1>RESUME MASTER</h1>
+        <div style="font-size:.9rem;opacity:.9">Your Career, Our Expertise</div>
+      </div>
+      <div>
+        <a class="btn" id="loadSample">Load Sample</a>
+        <a class="btn ghost" id="exportJson">Export JSON</a>
+        <a class="btn ghost" id="exportCsv">Export CSV</a>
+        <a class="btn" id="exportPdf">Compact PDF</a>
+      </div>
+    </div>
+  </header>
 
-<div class="container">
+  <main class="container">
+    <div class="builder-grid">
+      <!-- Form column -->
+      <section class="card form-column" aria-label="Resume form">
+        <form id="resumeForm" autocomplete="off">
+          <div class="section-title"><strong>Basic Info</strong></div>
+          <label>Full name
+            <input type="text" id="fullName" placeholder="Jane Doe" />
+          </label>
+          <label>Job title
+            <input type="text" id="jobTitle" placeholder="Product Designer" />
+          </label>
+          <label>Email
+            <input type="email" id="email" placeholder="you@example.com" />
+          </label>
+          <label>Phone
+            <input type="tel" id="phone" placeholder="+1 555 555 5555" />
+          </label>
+          <label>Summary
+            <textarea id="summary" rows="3" placeholder="Short professional summary"></textarea>
+          </label>
 
-<!-- FORM -->
-<div class="form">
+          <hr/>
 
-<div class="card">
-<h3>Template</h3>
-<select id="template">
-<option value="classic">Classic</option>
-<option value="modern">Modern</option>
-</select>
-</div>
+          <div class="section-title"><strong>Work Experience</strong> <button type="button" id="addExperience" class="btn small">+ Add</button></div>
+          <div id="experiences" class="list-area"></div>
 
-<div class="card">
-<h3>Personal</h3>
-<input id="name" placeholder="Name">
-<input id="email" placeholder="Email">
-</div>
+          <hr/>
 
-<div class="card">
-<h3>Skills</h3>
-<textarea id="skills"></textarea>
-</div>
+          <div class="section-title"><strong>Education</strong> <button type="button" id="addEducation" class="btn small">+ Add</button></div>
+          <div id="educations" class="list-area"></div>
 
-<div class="card">
-<h3>Education</h3>
-<div id="edu"></div>
-<button onclick="addEdu()">+ Add</button>
-</div>
+          <hr/>
 
-<div class="card">
-<h3>Experience</h3>
-<div id="exp"></div>
-<button onclick="addExp()">+ Add</button>
-</div>
+          <div class="section-title"><strong>Skills</strong></div>
+          <div id="skillsList" style="margin-bottom:8px"></div>
+          <input id="skillInput" placeholder="Add a skill and press Enter" />
 
-<button onclick="generate()">Generate</button>
-<button onclick="window.print()">Download PDF</button>
+          <hr/>
 
-</div>
+          <div class="section-title"><strong>Template</strong></div>
+          <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+            <select id="templateSelect" style="padding:8px;border-radius:8px">
+              <option value="clean">Clean</option>
+              <option value="modern">Modern</option>
+              <option value="elegant">Elegant</option>
+            </select>
+            <div class="template-thumbs">
+              <div class="thumb" data-tpl="clean">Clean</div>
+              <div class="thumb" data-tpl="modern">Modern</div>
+              <div class="thumb" data-tpl="elegant">Elegant</div>
+            </div>
+          </div>
 
-<!-- PREVIEW -->
-<div class="preview">
-<div id="output" class="resume"></div>
-</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" class="form-actions">
+            <label class="import-area btn ghost" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
+              <input id="csvFile" type="file" accept=".csv" style="display:none" />
+              Import CSV
+            </label>
+            <button type="button" id="resetBtn" class="btn ghost">Reset</button>
+            <button type="button" id="clearStorage" class="btn small">Clear Autosave</button>
+          </div>
+        </form>
+      </section>
 
-</div>
+      <!-- Preview column -->
+      <aside class="preview-column">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong>Live Preview</strong>
+            <div class="meta">Click skill pills to remove</div>
+          </div>
+          <div id="preview" class="resume-preview tpl-clean">
+            <!-- Preview injected by JS -->
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
 
-<script>
-let eduCount=0, expCount=0;
-
-/* AUTO SAVE */
-document.addEventListener("input", ()=>{
-    localStorage.setItem("resumeData", JSON.stringify({
-        name: name.value,
-        email: email.value,
-        skills: skills.value,
-        template: template.value
-    }));
-});
-
-/* LOAD */
-window.onload = ()=>{
-    let data = JSON.parse(localStorage.getItem("resumeData")||"{}");
-    if(data.name) name.value = data.name;
-    if(data.email) email.value = data.email;
-    if(data.skills) skills.value = data.skills;
-    if(data.template) template.value = data.template;
-}
-
-/* ADD/REMOVE */
-function addEdu(){
-    eduCount++;
-    edu.innerHTML += `
-    <div id="edu${eduCount}">
-        <input id="school${eduCount}" placeholder="School">
-        <input id="year${eduCount}" placeholder="Year">
-        <button class="delete-btn" onclick="removeEdu(${eduCount})">Delete</button>
-    </div>`;
-}
-function removeEdu(id){ document.getElementById("edu"+id)?.remove(); }
-
-function addExp(){
-    expCount++;
-    exp.innerHTML += `
-    <div id="exp${expCount}">
-        <input id="company${expCount}" placeholder="Company">
-        <textarea id="desc${expCount}"></textarea>
-        <button class="delete-btn" onclick="removeExp(${expCount})">Delete</button>
-    </div>`;
-}
-function removeExp(id){ document.getElementById("exp"+id)?.remove(); }
-
-/* GENERATE */
-function generate(){
-    let tpl = template.value;
-
-    let eduHTML="", expHTML="";
-
-    for(let i=1;i<=eduCount;i++){
-        let s=document.getElementById("school"+i);
-        let y=document.getElementById("year"+i);
-        if(s&&y) eduHTML+=`<p><b>${s.value}</b> (${y.value})</p>`;
+  <script>
+  // Single-file builder JS
+  (function(){
+    // External libs loaded via CDN; wait until they are available
+    function whenReady(fn){
+      if (window.html2canvas && window.jspdf && window.Papa) return fn();
+      setTimeout(()=>whenReady(fn), 80);
     }
 
-    for(let i=1;i<=expCount;i++){
-        let c=document.getElementById("company"+i);
-        let d=document.getElementById("desc"+i);
-        if(c&&d) expHTML+=`<p><b>${c.value}</b><br>${d.value}</p>`;
-    }
+    whenReady(() => {
+      const { jsPDF } = window.jspdf;
 
-    output.className = "resume " + tpl;
+      // DOM refs
+      const fullName = document.getElementById('fullName');
+      const jobTitle = document.getElementById('jobTitle');
+      const email = document.getElementById('email');
+      const phone = document.getElementById('phone');
+      const summary = document.getElementById('summary');
+      const experiencesDiv = document.getElementById('experiences');
+      const educationsDiv = document.getElementById('educations');
+      const addExperienceBtn = document.getElementById('addExperience');
+      const addEducationBtn = document.getElementById('addEducation');
+      const skillsList = document.getElementById('skillsList');
+      const skillInput = document.getElementById('skillInput');
+      const templateSelect = document.getElementById('templateSelect');
+      const preview = document.getElementById('preview');
+      const csvFile = document.getElementById('csvFile');
+      const exportJson = document.getElementById('exportJson');
+      const exportCsv = document.getElementById('exportCsv');
+      const exportPdf = document.getElementById('exportPdf');
+      const resetBtn = document.getElementById('resetBtn');
+      const clearStorage = document.getElementById('clearStorage');
+      const loadSample = document.getElementById('loadSample');
 
-    output.innerHTML = `
-        <h1>${name.value}</h1>
-        <p>${email.value}</p>
+      const LS_KEY = 'resume_master_single_v1';
 
-        <div class="section">
-            <h3>Skills</h3>
-            <p>${skills.value}</p>
-        </div>
+      // Data model
+      let data = {
+        meta: { template: 'clean' },
+        basics: { name:'', title:'', email:'', phone:'', summary:'' },
+        experiences: [],
+        educations: [],
+        skills: []
+      };
 
-        <div class="section">
-            <h3>Education</h3>
-            ${eduHTML}
-        </div>
+      // Helpers
+      function uid(p='id'){ return p + '_' + Math.random().toString(36).slice(2,9); }
+      function escapeHtml(s=''){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+      function nl2br(s=''){ return escapeHtml(s).replace(/\\n/g,'<br/>'); }
 
-        <div class="section">
-            <h3>Experience</h3>
-            ${expHTML}
-        </div>
-    `;
-}
-</script>
+      // Load/save
+      function load(){
+        try {
+          const raw = localStorage.getItem(LS_KEY);
+          if (raw) data = JSON.parse(raw);
+        } catch(e){ console.warn(e) }
+      }
+      function save(){ try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch(e){ console.warn(e) } }
 
+      // Render functions
+      function renderExperiences(){
+        experiencesDiv.innerHTML = '';
+        data.experiences.forEach(exp => {
+          const el = document.createElement('div');
+          el.innerHTML = `
+            <div style="border:1px dashed #eef;padding:8px;border-radius:8px">
+              <label>Company <input data-id="${exp.id}" data-field="company" value="${escapeHtml(exp.company)}" /></label>
+              <label>Role <input data-id="${exp.id}" data-field="role" value="${escapeHtml(exp.role)}" /></label>
+              <label>Period <input data-id="${exp.id}" data-field="period" value="${escapeHtml(exp.period)}" /></label>
+              <label>Details <textarea data-id="${exp.id}" data-field="details">${escapeHtml(exp.details)}</textarea></label>
+              <div style="margin-top:6px"><button data-id="${exp.id}" class="btn small remove-exp">Remove</button></div>
+            </div>
+          `;
+          experiencesDiv.appendChild(el);
+        });
+      }
+      function renderEducations(){
+        educationsDiv.innerHTML = '';
+        data.educations.forEach(ed => {
+          const el = document.createElement('div');
+          el.innerHTML = `
+            <div style="border:1px dashed #eef;padding:8px;border-radius:8px">
+              <label>Institution <input data-id="${ed.id}" data-field="institution" value="${escapeHtml(ed.institution)}" /></label>
+              <label>Degree <input data-id="${ed.id}" data-field="degree" value="${escapeHtml(ed.degree)}" /></label>
+              <label>Period <input data-id="${ed.id}" data-field="period" value="${escapeHtml(ed.period)}" /></label>
+              <div style="margin-top:6px"><button data-id="${ed.id}" class="btn small remove-edu">Remove</button></div>
+            </div>
+          `;
+          educationsDiv.appendChild(el);
+        });
+      }
+      function renderSkills(){
+        skillsList.innerHTML = '';
+        data.skills.forEach(s => {
+          const span = document.createElement('span');
+          span.className = 'skill-pill';
+          span.textContent = s;
+          span.title = 'Click to remove';
+          span.addEventListener('click', () => {
+            data.skills = data.skills.filter(x => x !== s);
+            save(); renderSkills(); renderPreview();
+          });
+          skillsList.appendChild(span);
+        });
+      }
+
+      function renderPreview(){
+        preview.className = 'resume-preview tpl-' + (data.meta.template || 'clean');
+        preview.innerHTML = `
+          <div class="resume-header">
+            <div>
+              <h2>${escapeHtml(data.basics.name || 'Your Name')}</h2>
+              <div class="meta">${escapeHtml(data.basics.title || '')}</div>
+            </div>
+            <div class="meta" style="text-align:right">
+              <div>${escapeHtml(data.basics.email || '')}</div>
+              <div>${escapeHtml(data.basics.phone || '')}</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h4>Summary</h4>
+            <div class="item">${nl2br(data.basics.summary || 'A short professional summary.')}</div>
+          </div>
+
+          <div class="section">
+            <h4>Experience</h4>
+            ${data.experiences.map(e => `
+              <div class="item">
+                <strong>${escapeHtml(e.role || '')}</strong> — ${escapeHtml(e.company || '')}
+                <div class="meta">${escapeHtml(e.period || '')}</div>
+                <div>${nl2br(e.details || '')}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="section">
+            <h4>Education</h4>
+            ${data.educations.map(ed => `
+              <div class="item">
+                <strong>${escapeHtml(ed.degree || '')}</strong> — ${escapeHtml(ed.institution || '')}
+                <div class="meta">${escapeHtml(ed.period || '')}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="section">
+            <h4>Skills</h4>
+            <div class="item">${data.skills.map(s => `<span style="display:inline-block;margin:4px;padding:6px 8px;background:#f3f4f6;border-radius:12px">${escapeHtml(s)}</span>`).join('')}</div>
+          </div>
+        `;
+      }
+
+      // Wire events
+      function wire(){
+        // Basic fields
+        [fullName, jobTitle, email, phone, summary].forEach(el => {
+          el.addEventListener('input', () => {
+            data.basics.name = fullName.value.trim();
+            data.basics.title = jobTitle.value.trim();
+            data.basics.email = email.value.trim();
+            data.basics.phone = phone.value.trim();
+            data.basics.summary = summary.value.trim();
+            save(); renderPreview();
+          });
+        });
+
+        // Add experience/education
+        addExperienceBtn.addEventListener('click', () => {
+          data.experiences.push({ id: uid('exp'), company:'', role:'', period:'', details:'' });
+          save(); renderExperiences(); renderPreview();
+        });
+        addEducationBtn.addEventListener('click', () => {
+          data.educations.push({ id: uid('edu'), institution:'', degree:'', period:'' });
+          save(); renderEducations(); renderPreview();
+        });
+
+        // Delegate input changes for dynamic lists
+        [experiencesDiv, educationsDiv].forEach(container => {
+          container.addEventListener('input', (ev) => {
+            const t = ev.target;
+            const id = t.dataset.id;
+            const field = t.dataset.field;
+            if (!id || !field) return;
+            const list = container === experiencesDiv ? data.experiences : data.educations;
+            const item = list.find(x => x.id === id);
+            if (item) {
+              item[field] = t.value;
+              save(); renderPreview();
+            }
+          });
+          container.addEventListener('click', (ev) => {
+            const btn = ev.target.closest('button.remove-exp, button.remove-edu');
+            if (!btn) return;
+            const id = btn.dataset.id;
+            if (!id) return;
+            if (btn.classList.contains('remove-exp')) data.experiences = data.experiences.filter(x => x.id !== id);
+            else data.educations = data.educations.filter(x => x.id !== id);
+            save(); renderExperiences(); renderEducations(); renderPreview();
+          });
+        });
+
+        // Skills input
+        skillInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const v = skillInput.value.trim();
+            if (v && !data.skills.includes(v)) {
+              data.skills.push(v);
+              skillInput.value = '';
+              save(); renderSkills(); renderPreview();
+            }
+          }
+        });
+
+        // Template selector & thumbs
+        templateSelect.addEventListener('change', () => {
+          data.meta.template = templateSelect.value;
+          save(); renderPreview();
+        });
+        document.querySelectorAll('.thumb').forEach(t => {
+          t.addEventListener('click', () => {
+            const tpl = t.dataset.tpl;
+            templateSelect.value = tpl;
+            data.meta.template = tpl;
+            save(); renderPreview();
+          });
+        });
+
+        // CSV import
+        csvFile.addEventListener('change', (e) => {
+          const f = e.target.files[0];
+          if (!f) return;
+          Papa.parse(f, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results){
+              // Expect CSV with headers like: name,title,email,phone,summary,company,role,period,details,institution,degree,edu_period,skills
+              // We'll take the first row for basics and then map remaining rows into experiences/educations if present.
+              const rows = results.data;
+              if (!rows || rows.length === 0) return alert('CSV appears empty or invalid.');
+              // Use first row for basics if fields exist
+              const r0 = rows[0];
+              if (r0.name) data.basics.name = r0.name;
+              if (r0.title) data.basics.title = r0.title;
+              if (r0.email) data.basics.email = r0.email;
+              if (r0.phone) data.basics.phone = r0.phone;
+              if (r0.summary) data.basics.summary = r0.summary;
+              // Experiences: any row with company or role
+              data.experiences = rows.filter(r => r.company || r.role).map(r => ({
+                id: uid('exp'),
+                company: r.company || '',
+                role: r.role || '',
+                period: r.period || r.period || '',
+                details: r.details || ''
+              }));
+              // Educations: any row with institution or degree
+              data.educations = rows.filter(r => r.institution || r.degree).map(r => ({
+                id: uid('edu'),
+                institution: r.institution || '',
+                degree: r.degree || '',
+                period: r.edu_period || r.period || ''
+              }));
+              // Skills: if a skills column exists (comma separated)
+              if (r0.skills) {
+                const s = String(r0.skills).split(',').map(x=>x.trim()).filter(Boolean);
+                data.skills = Array.from(new Set((data.skills||[]).concat(s)));
+              }
+              save(); renderAll();
+              alert('CSV imported. Review fields and save.');
+            },
+            error: function(err){ alert('CSV import failed: ' + err.message) }
+          });
+        });
+
+        // Export JSON
+        document.getElementById('exportJson').addEventListener('click', () => {
+          const payload = JSON.stringify(data, null, 2);
+          const blob = new Blob([payload], {type:'application/json'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = (data.basics.name || 'resume') + '.json';
+          document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        });
+
+        // Export CSV (simple flattened)
+        document.getElementById('exportCsv').addEventListener('click', () => {
+          // Flatten: basics + first experience + first education + skills
+          const row = {
+            name: data.basics.name || '',
+            title: data.basics.title || '',
+            email: data.basics.email || '',
+            phone: data.basics.phone || '',
+            summary: data.basics.summary || '',
+            company: (data.experiences[0] && data.experiences[0].company) || '',
+            role: (data.experiences[0] && data.experiences[0].role) || '',
+            period: (data.experiences[0] && data.experiences[0].period) || '',
+            details: (data.experiences[0] && data.experiences[0].details) || '',
+            institution: (data.educations[0] && data.educations[0].institution) || '',
+            degree: (data.educations[0] && data.educations[0].degree) || '',
+            edu_period: (data.educations[0] && data.educations[0].period) || '',
+            skills: (data.skills || []).join(', ')
+          };
+          const csv = Papa.unparse([row]);
+          const blob = new Blob([csv], {type:'text/csv'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = (data.basics.name || 'resume') + '.csv';
+          document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        });
+
+        // Compact PDF export using html2canvas + jsPDF
+        document.getElementById('exportPdf').addEventListener('click', async () => {
+          try {
+            // Temporarily scale preview for better resolution
+            const node = preview;
+            const originalBg = node.style.backgroundColor;
+            node.style.backgroundColor = '#fff';
+            // Use html2canvas to capture
+            const canvas = await html2canvas(node, {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: '#ffffff'
+            });
+            const imgData = canvas.toDataURL('image/jpeg', 0.85); // compact JPEG
+            const pdf = new jsPDF({
+              unit: 'pt',
+              format: 'a4',
+              compress: true
+            });
+            // Calculate image size to fit A4 width with margins
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 20;
+            const imgProps = { width: canvas.width, height: canvas.height };
+            const ratio = Math.min((pageWidth - margin*2) / imgProps.width, (pageHeight - margin*2) / imgProps.height);
+            const imgW = imgProps.width * ratio;
+            const imgH = imgProps.height * ratio;
+            pdf.addImage(imgData, 'JPEG', margin, margin, imgW, imgH, undefined, 'FAST');
+            // If content taller than one page, add additional pages
+            let remainingHeight = imgProps.height - (pageHeight - margin*2)/ratio;
+            let offsetY = (pageHeight - margin*2)/ratio;
+            while (remainingHeight > 0) {
+              pdf.addPage();
+              const sx = 0;
+              const sy = offsetY;
+              const sWidth = imgProps.width;
+              const sHeight = Math.min(imgProps.height - offsetY, (pageHeight - margin*2)/ratio);
+              // Create a temporary canvas to crop
+              const tmp = document.createElement('canvas');
+              tmp.width = sWidth;
+              tmp.height = sHeight;
+              const ctx = tmp.getContext('2d');
+              ctx.drawImage(canvas, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
+              const partData = tmp.toDataURL('image/jpeg', 0.85);
+              pdf.addImage(partData, 'JPEG', margin, margin, imgW, sHeight * ratio, undefined, 'FAST');
+              offsetY += sHeight;
+              remainingHeight -= sHeight;
+            }
+            const filename = (data.basics.name || 'resume') + '.pdf';
+            pdf.save(filename);
+            node.style.backgroundColor = originalBg;
+          } catch (err) {
+            alert('PDF export failed: ' + err.message);
+            console.error(err);
+          }
+        });
+
+        // Reset & clear storage
+        resetBtn.addEventListener('click', () => {
+          if (!confirm('Reset all data?')) return;
+          data = { meta:{template:'clean'}, basics:{name:'',title:'',email:'',phone:'',summary:''}, experiences:[], educations:[], skills:[] };
+          save(); renderAll();
+        });
+        clearStorage.addEventListener('click', () => {
+          if (!confirm('Clear autosaved data from this browser?')) return;
+          localStorage.removeItem(LS_KEY);
+          alert('Autosave cleared.');
+        });
+
+        // Load sample
+        loadSample.addEventListener('click', () => {
+          data = {
+            meta:{template:'modern'},
+            basics:{name:'Alex Rivera', title:'Frontend Engineer', email:'alex.rivera@example.com', phone:'+63 912 345 6789', summary:'Frontend engineer with 5+ years building responsive web apps.'},
+            experiences:[
+              {id:uid('exp'), company:'BrightApps', role:'Senior Frontend Engineer', period:'2021 — Present', details:'Led UI rebuild; improved performance by 40%.'},
+              {id:uid('exp'), company:'WebWorks', role:'Frontend Developer', period:'2018 — 2021', details:'Built component library and design system.'}
+            ],
+            educations:[
+              {id:uid('edu'), institution:'State University', degree:'B.S. Computer Science', period:'2014 — 2018'}
+            ],
+            skills:['JavaScript','React','HTML','CSS']
+          };
+          save(); renderAll();
+        });
+      }
+
+      // Render all to form & preview
+      function renderAll(){
+        fullName.value = data.basics.name || '';
+        jobTitle.value = data.basics.title || '';
+        email.value = data.basics.email || '';
+        phone.value = data.basics.phone || '';
+        summary.value = data.basics.summary || '';
+        templateSelect.value = data.meta.template || 'clean';
+        renderExperiences(); renderEducations(); renderSkills(); renderPreview();
+      }
+
+      // Initialize
+      function init(){
+        load();
+        wire();
+        renderAll();
+        // Autosave interval
+        setInterval(save, 2000);
+        window.addEventListener('beforeunload', save);
+      }
+
+      init();
+    }); // whenReady
+  })();
+  </script>
 </body>
 </html>
