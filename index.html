@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Resume Master — Single File Builder</title>
+  <title>Resume Master — Single File Builder (Fixed)</title>
 
-  <!-- Google Fonts for templates -->
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Merriweather:wght@300;400;700&family=Roboto+Slab:wght@300;400;700&display=swap" rel="stylesheet">
 
   <!-- External libs (CDN) -->
@@ -39,13 +39,13 @@
     .skill-pill{display:inline-block;margin:4px;padding:6px 10px;background:#eef2ff;border-radius:999px;cursor:pointer}
     .preview-column{position:relative}
     .resume-preview{background:var(--card);padding:18px;border-radius:8px;min-height:420px;overflow:auto}
-    .resume-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #eef2f3;padding-bottom:10px;margin-bottom:12px}
+    .resume-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #eef;padding-bottom:10px;margin-bottom:12px}
     .resume-preview h2{margin:0}
     .meta{color:var(--muted);font-size:.9rem}
     .section{margin-bottom:12px}
     .section h4{margin:0 0 6px 0;color:var(--accent)}
     .template-thumbs{display:flex;gap:8px;align-items:center}
-    .thumb{width:72px;height:56px;border-radius:6px;border:1px solid #e6e9ee;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;background:#fff}
+    .thumb{width:72px;height:56px;border-radius:6px;border:1px solid #e6e9ee;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;background:#fff;cursor:pointer}
     /* Template styles */
     .tpl-clean{font-family:Arial, sans-serif}
     .tpl-modern{font-family:Inter, system-ui}
@@ -60,7 +60,6 @@
     }
     /* Print */
     @media print{
-      body{background:#fff}
       header, .form-actions, .controls, .btn, .top-row a, .import-area{display:none}
       .builder-grid{grid-template-columns:1fr}
       .resume-preview{box-shadow:none;border-radius:0;padding:0}
@@ -74,11 +73,11 @@
         <h1>RESUME MASTER</h1>
         <div style="font-size:.9rem;opacity:.9">Your Career, Our Expertise</div>
       </div>
-      <div>
-        <a class="btn" id="loadSample">Load Sample</a>
-        <a class="btn ghost" id="exportJson">Export JSON</a>
-        <a class="btn ghost" id="exportCsv">Export CSV</a>
-        <a class="btn" id="exportPdf">Compact PDF</a>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn" id="loadSample">Load Sample</button>
+        <button class="btn ghost" id="exportJson">Export JSON</button>
+        <button class="btn ghost" id="exportCsv">Export CSV</button>
+        <button class="btn" id="exportPdf">Compact PDF</button>
       </div>
     </div>
   </header>
@@ -87,7 +86,7 @@
     <div class="builder-grid">
       <!-- Form column -->
       <section class="card form-column" aria-label="Resume form">
-        <form id="resumeForm" autocomplete="off">
+        <form id="resumeForm" autocomplete="off" onsubmit="return false;">
           <div class="section-title"><strong>Basic Info</strong></div>
           <label>Full name
             <input type="text" id="fullName" placeholder="Jane Doe" />
@@ -164,293 +163,282 @@
   </main>
 
   <script>
-  // Single-file builder JS
   (function(){
-    // External libs loaded via CDN; wait until they are available
-    function whenReady(fn){
-      if (window.html2canvas && window.jspdf && window.Papa) return fn();
-      setTimeout(()=>whenReady(fn), 80);
+    // DOM refs (immediately available)
+    const fullName = document.getElementById('fullName');
+    const jobTitle = document.getElementById('jobTitle');
+    const email = document.getElementById('email');
+    const phone = document.getElementById('phone');
+    const summary = document.getElementById('summary');
+    const experiencesDiv = document.getElementById('experiences');
+    const educationsDiv = document.getElementById('educations');
+    const addExperienceBtn = document.getElementById('addExperience');
+    const addEducationBtn = document.getElementById('addEducation');
+    const skillsList = document.getElementById('skillsList');
+    const skillInput = document.getElementById('skillInput');
+    const templateSelect = document.getElementById('templateSelect');
+    const preview = document.getElementById('preview');
+    const csvFile = document.getElementById('csvFile');
+    const exportJsonBtn = document.getElementById('exportJson');
+    const exportCsvBtn = document.getElementById('exportCsv');
+    const exportPdfBtn = document.getElementById('exportPdf');
+    const resetBtn = document.getElementById('resetBtn');
+    const clearStorage = document.getElementById('clearStorage');
+    const loadSample = document.getElementById('loadSample');
+
+    const LS_KEY = 'resume_master_single_v1';
+
+    // Data model
+    let data = {
+      meta: { template: 'clean' },
+      basics: { name:'', title:'', email:'', phone:'', summary:'' },
+      experiences: [],
+      educations: [],
+      skills: []
+    };
+
+    // Helpers
+    function uid(p='id'){ return p + '_' + Math.random().toString(36).slice(2,9); }
+    function escapeHtml(s=''){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function nl2br(s=''){ return escapeHtml(s).replace(/\n/g,'<br/>'); }
+
+    // Load/save
+    function load(){
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (raw) data = JSON.parse(raw);
+      } catch(e){ console.warn(e) }
     }
+    function save(){ try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch(e){ console.warn(e) } }
 
-    whenReady(() => {
-      const { jsPDF } = window.jspdf;
-
-      // DOM refs
-      const fullName = document.getElementById('fullName');
-      const jobTitle = document.getElementById('jobTitle');
-      const email = document.getElementById('email');
-      const phone = document.getElementById('phone');
-      const summary = document.getElementById('summary');
-      const experiencesDiv = document.getElementById('experiences');
-      const educationsDiv = document.getElementById('educations');
-      const addExperienceBtn = document.getElementById('addExperience');
-      const addEducationBtn = document.getElementById('addEducation');
-      const skillsList = document.getElementById('skillsList');
-      const skillInput = document.getElementById('skillInput');
-      const templateSelect = document.getElementById('templateSelect');
-      const preview = document.getElementById('preview');
-      const csvFile = document.getElementById('csvFile');
-      const exportJson = document.getElementById('exportJson');
-      const exportCsv = document.getElementById('exportCsv');
-      const exportPdf = document.getElementById('exportPdf');
-      const resetBtn = document.getElementById('resetBtn');
-      const clearStorage = document.getElementById('clearStorage');
-      const loadSample = document.getElementById('loadSample');
-
-      const LS_KEY = 'resume_master_single_v1';
-
-      // Data model
-      let data = {
-        meta: { template: 'clean' },
-        basics: { name:'', title:'', email:'', phone:'', summary:'' },
-        experiences: [],
-        educations: [],
-        skills: []
-      };
-
-      // Helpers
-      function uid(p='id'){ return p + '_' + Math.random().toString(36).slice(2,9); }
-      function escapeHtml(s=''){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-      function nl2br(s=''){ return escapeHtml(s).replace(/\\n/g,'<br/>'); }
-
-      // Load/save
-      function load(){
-        try {
-          const raw = localStorage.getItem(LS_KEY);
-          if (raw) data = JSON.parse(raw);
-        } catch(e){ console.warn(e) }
-      }
-      function save(){ try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch(e){ console.warn(e) } }
-
-      // Render functions
-      function renderExperiences(){
-        experiencesDiv.innerHTML = '';
-        data.experiences.forEach(exp => {
-          const el = document.createElement('div');
-          el.innerHTML = `
-            <div style="border:1px dashed #eef;padding:8px;border-radius:8px">
-              <label>Company <input data-id="${exp.id}" data-field="company" value="${escapeHtml(exp.company)}" /></label>
-              <label>Role <input data-id="${exp.id}" data-field="role" value="${escapeHtml(exp.role)}" /></label>
-              <label>Period <input data-id="${exp.id}" data-field="period" value="${escapeHtml(exp.period)}" /></label>
-              <label>Details <textarea data-id="${exp.id}" data-field="details">${escapeHtml(exp.details)}</textarea></label>
-              <div style="margin-top:6px"><button data-id="${exp.id}" class="btn small remove-exp">Remove</button></div>
-            </div>
-          `;
-          experiencesDiv.appendChild(el);
-        });
-      }
-      function renderEducations(){
-        educationsDiv.innerHTML = '';
-        data.educations.forEach(ed => {
-          const el = document.createElement('div');
-          el.innerHTML = `
-            <div style="border:1px dashed #eef;padding:8px;border-radius:8px">
-              <label>Institution <input data-id="${ed.id}" data-field="institution" value="${escapeHtml(ed.institution)}" /></label>
-              <label>Degree <input data-id="${ed.id}" data-field="degree" value="${escapeHtml(ed.degree)}" /></label>
-              <label>Period <input data-id="${ed.id}" data-field="period" value="${escapeHtml(ed.period)}" /></label>
-              <div style="margin-top:6px"><button data-id="${ed.id}" class="btn small remove-edu">Remove</button></div>
-            </div>
-          `;
-          educationsDiv.appendChild(el);
-        });
-      }
-      function renderSkills(){
-        skillsList.innerHTML = '';
-        data.skills.forEach(s => {
-          const span = document.createElement('span');
-          span.className = 'skill-pill';
-          span.textContent = s;
-          span.title = 'Click to remove';
-          span.addEventListener('click', () => {
-            data.skills = data.skills.filter(x => x !== s);
-            save(); renderSkills(); renderPreview();
-          });
-          skillsList.appendChild(span);
-        });
-      }
-
-      function renderPreview(){
-        preview.className = 'resume-preview tpl-' + (data.meta.template || 'clean');
-        preview.innerHTML = `
-          <div class="resume-header">
-            <div>
-              <h2>${escapeHtml(data.basics.name || 'Your Name')}</h2>
-              <div class="meta">${escapeHtml(data.basics.title || '')}</div>
-            </div>
-            <div class="meta" style="text-align:right">
-              <div>${escapeHtml(data.basics.email || '')}</div>
-              <div>${escapeHtml(data.basics.phone || '')}</div>
-            </div>
-          </div>
-
-          <div class="section">
-            <h4>Summary</h4>
-            <div class="item">${nl2br(data.basics.summary || 'A short professional summary.')}</div>
-          </div>
-
-          <div class="section">
-            <h4>Experience</h4>
-            ${data.experiences.map(e => `
-              <div class="item">
-                <strong>${escapeHtml(e.role || '')}</strong> — ${escapeHtml(e.company || '')}
-                <div class="meta">${escapeHtml(e.period || '')}</div>
-                <div>${nl2br(e.details || '')}</div>
-              </div>
-            `).join('')}
-          </div>
-
-          <div class="section">
-            <h4>Education</h4>
-            ${data.educations.map(ed => `
-              <div class="item">
-                <strong>${escapeHtml(ed.degree || '')}</strong> — ${escapeHtml(ed.institution || '')}
-                <div class="meta">${escapeHtml(ed.period || '')}</div>
-              </div>
-            `).join('')}
-          </div>
-
-          <div class="section">
-            <h4>Skills</h4>
-            <div class="item">${data.skills.map(s => `<span style="display:inline-block;margin:4px;padding:6px 8px;background:#f3f4f6;border-radius:12px">${escapeHtml(s)}</span>`).join('')}</div>
+    // Render functions
+    function renderExperiences(){
+      experiencesDiv.innerHTML = '';
+      data.experiences.forEach(exp => {
+        const el = document.createElement('div');
+        el.innerHTML = `
+          <div style="border:1px dashed #eef;padding:8px;border-radius:8px">
+            <label>Company <input data-id="${exp.id}" data-field="company" value="${exp.company || ''}" /></label>
+            <label>Role <input data-id="${exp.id}" data-field="role" value="${exp.role || ''}" /></label>
+            <label>Period <input data-id="${exp.id}" data-field="period" value="${exp.period || ''}" /></label>
+            <label>Details <textarea data-id="${exp.id}" data-field="details">${exp.details || ''}</textarea></label>
+            <div style="margin-top:6px"><button data-id="${exp.id}" class="btn small remove-exp">Remove</button></div>
           </div>
         `;
-      }
-
-      // Wire events
-      function wire(){
-        // Basic fields
-        [fullName, jobTitle, email, phone, summary].forEach(el => {
-          el.addEventListener('input', () => {
-            data.basics.name = fullName.value.trim();
-            data.basics.title = jobTitle.value.trim();
-            data.basics.email = email.value.trim();
-            data.basics.phone = phone.value.trim();
-            data.basics.summary = summary.value.trim();
-            save(); renderPreview();
-          });
+        experiencesDiv.appendChild(el);
+      });
+    }
+    function renderEducations(){
+      educationsDiv.innerHTML = '';
+      data.educations.forEach(ed => {
+        const el = document.createElement('div');
+        el.innerHTML = `
+          <div style="border:1px dashed #eef;padding:8px;border-radius:8px">
+            <label>Institution <input data-id="${ed.id}" data-field="institution" value="${ed.institution || ''}" /></label>
+            <label>Degree <input data-id="${ed.id}" data-field="degree" value="${ed.degree || ''}" /></label>
+            <label>Period <input data-id="${ed.id}" data-field="period" value="${ed.period || ''}" /></label>
+            <div style="margin-top:6px"><button data-id="${ed.id}" class="btn small remove-edu">Remove</button></div>
+          </div>
+        `;
+        educationsDiv.appendChild(el);
+      });
+    }
+    function renderSkills(){
+      skillsList.innerHTML = '';
+      data.skills.forEach(s => {
+        const span = document.createElement('span');
+        span.className = 'skill-pill';
+        span.textContent = s;
+        span.title = 'Click to remove';
+        span.addEventListener('click', () => {
+          data.skills = data.skills.filter(x => x !== s);
+          save(); renderSkills(); renderPreview();
         });
+        skillsList.appendChild(span);
+      });
+    }
 
-        // Add experience/education
-        addExperienceBtn.addEventListener('click', () => {
-          data.experiences.push({ id: uid('exp'), company:'', role:'', period:'', details:'' });
-          save(); renderExperiences(); renderPreview();
-        });
-        addEducationBtn.addEventListener('click', () => {
-          data.educations.push({ id: uid('edu'), institution:'', degree:'', period:'' });
-          save(); renderEducations(); renderPreview();
-        });
+    function renderPreview(){
+      preview.className = 'resume-preview tpl-' + (data.meta.template || 'clean');
+      preview.innerHTML = `
+        <div class="resume-header">
+          <div>
+            <h2>${escapeHtml(data.basics.name || 'Your Name')}</h2>
+            <div class="meta">${escapeHtml(data.basics.title || '')}</div>
+          </div>
+          <div class="meta" style="text-align:right">
+            <div>${escapeHtml(data.basics.email || '')}</div>
+            <div>${escapeHtml(data.basics.phone || '')}</div>
+          </div>
+        </div>
 
-        // Delegate input changes for dynamic lists
-        [experiencesDiv, educationsDiv].forEach(container => {
-          container.addEventListener('input', (ev) => {
-            const t = ev.target;
-            const id = t.dataset.id;
-            const field = t.dataset.field;
-            if (!id || !field) return;
-            const list = container === experiencesDiv ? data.experiences : data.educations;
-            const item = list.find(x => x.id === id);
-            if (item) {
-              item[field] = t.value;
-              save(); renderPreview();
-            }
-          });
-          container.addEventListener('click', (ev) => {
-            const btn = ev.target.closest('button.remove-exp, button.remove-edu');
-            if (!btn) return;
-            const id = btn.dataset.id;
-            if (!id) return;
-            if (btn.classList.contains('remove-exp')) data.experiences = data.experiences.filter(x => x.id !== id);
-            else data.educations = data.educations.filter(x => x.id !== id);
-            save(); renderExperiences(); renderEducations(); renderPreview();
-          });
-        });
+        <div class="section">
+          <h4>Summary</h4>
+          <div class="item">${nl2br(data.basics.summary || 'A short professional summary.')}</div>
+        </div>
 
-        // Skills input
-        skillInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            const v = skillInput.value.trim();
-            if (v && !data.skills.includes(v)) {
-              data.skills.push(v);
-              skillInput.value = '';
-              save(); renderSkills(); renderPreview();
-            }
-          }
-        });
+        <div class="section">
+          <h4>Experience</h4>
+          ${data.experiences.map(e => `
+            <div class="item">
+              <strong>${escapeHtml(e.role || '')}</strong> — ${escapeHtml(e.company || '')}
+              <div class="meta">${escapeHtml(e.period || '')}</div>
+              <div>${nl2br(e.details || '')}</div>
+            </div>
+          `).join('')}
+        </div>
 
-        // Template selector & thumbs
-        templateSelect.addEventListener('change', () => {
-          data.meta.template = templateSelect.value;
+        <div class="section">
+          <h4>Education</h4>
+          ${data.educations.map(ed => `
+            <div class="item">
+              <strong>${escapeHtml(ed.degree || '')}</strong> — ${escapeHtml(ed.institution || '')}
+              <div class="meta">${escapeHtml(ed.period || '')}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="section">
+          <h4>Skills</h4>
+          <div class="item">${data.skills.map(s => `<span style="display:inline-block;margin:4px;padding:6px 8px;background:#f3f4f6;border-radius:12px">${escapeHtml(s)}</span>`).join('')}</div>
+        </div>
+      `;
+    }
+
+    // Wire events immediately (so buttons are clickable even if libs load later)
+    function wireImmediate(){
+      // Basic fields
+      [fullName, jobTitle, email, phone, summary].forEach(el => {
+        el.addEventListener('input', () => {
+          data.basics.name = fullName.value.trim();
+          data.basics.title = jobTitle.value.trim();
+          data.basics.email = email.value.trim();
+          data.basics.phone = phone.value.trim();
+          data.basics.summary = summary.value.trim();
           save(); renderPreview();
         });
-        document.querySelectorAll('.thumb').forEach(t => {
-          t.addEventListener('click', () => {
-            const tpl = t.dataset.tpl;
-            templateSelect.value = tpl;
-            data.meta.template = tpl;
+      });
+
+      // Add experience/education
+      addExperienceBtn.addEventListener('click', () => {
+        data.experiences.push({ id: uid('exp'), company:'', role:'', period:'', details:'' });
+        save(); renderExperiences(); renderPreview();
+      });
+      addEducationBtn.addEventListener('click', () => {
+        data.educations.push({ id: uid('edu'), institution:'', degree:'', period:'' });
+        save(); renderEducations(); renderPreview();
+      });
+
+      // Delegate input changes for dynamic lists
+      [experiencesDiv, educationsDiv].forEach(container => {
+        container.addEventListener('input', (ev) => {
+          const t = ev.target;
+          const id = t.dataset.id;
+          const field = t.dataset.field;
+          if (!id || !field) return;
+          const list = container === experiencesDiv ? data.experiences : data.educations;
+          const item = list.find(x => x.id === id);
+          if (item) {
+            item[field] = t.value;
             save(); renderPreview();
-          });
+          }
         });
-
-        // CSV import
-        csvFile.addEventListener('change', (e) => {
-          const f = e.target.files[0];
-          if (!f) return;
-          Papa.parse(f, {
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results){
-              // Expect CSV with headers like: name,title,email,phone,summary,company,role,period,details,institution,degree,edu_period,skills
-              // We'll take the first row for basics and then map remaining rows into experiences/educations if present.
-              const rows = results.data;
-              if (!rows || rows.length === 0) return alert('CSV appears empty or invalid.');
-              // Use first row for basics if fields exist
-              const r0 = rows[0];
-              if (r0.name) data.basics.name = r0.name;
-              if (r0.title) data.basics.title = r0.title;
-              if (r0.email) data.basics.email = r0.email;
-              if (r0.phone) data.basics.phone = r0.phone;
-              if (r0.summary) data.basics.summary = r0.summary;
-              // Experiences: any row with company or role
-              data.experiences = rows.filter(r => r.company || r.role).map(r => ({
-                id: uid('exp'),
-                company: r.company || '',
-                role: r.role || '',
-                period: r.period || r.period || '',
-                details: r.details || ''
-              }));
-              // Educations: any row with institution or degree
-              data.educations = rows.filter(r => r.institution || r.degree).map(r => ({
-                id: uid('edu'),
-                institution: r.institution || '',
-                degree: r.degree || '',
-                period: r.edu_period || r.period || ''
-              }));
-              // Skills: if a skills column exists (comma separated)
-              if (r0.skills) {
-                const s = String(r0.skills).split(',').map(x=>x.trim()).filter(Boolean);
-                data.skills = Array.from(new Set((data.skills||[]).concat(s)));
-              }
-              save(); renderAll();
-              alert('CSV imported. Review fields and save.');
-            },
-            error: function(err){ alert('CSV import failed: ' + err.message) }
-          });
+        container.addEventListener('click', (ev) => {
+          const btn = ev.target.closest('button.remove-exp, button.remove-edu');
+          if (!btn) return;
+          const id = btn.dataset.id;
+          if (!id) return;
+          if (btn.classList.contains('remove-exp')) data.experiences = data.experiences.filter(x => x.id !== id);
+          else data.educations = data.educations.filter(x => x.id !== id);
+          save(); renderExperiences(); renderEducations(); renderPreview();
         });
+      });
 
-        // Export JSON
-        document.getElementById('exportJson').addEventListener('click', () => {
-          const payload = JSON.stringify(data, null, 2);
-          const blob = new Blob([payload], {type:'application/json'});
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url; a.download = (data.basics.name || 'resume') + '.json';
-          document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      // Skills input
+      skillInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const v = skillInput.value.trim();
+          if (v && !data.skills.includes(v)) {
+            data.skills.push(v);
+            skillInput.value = '';
+            save(); renderSkills(); renderPreview();
+          }
+        }
+      });
+
+      // Template selector & thumbs
+      templateSelect.addEventListener('change', () => {
+        data.meta.template = templateSelect.value;
+        save(); renderPreview();
+      });
+      document.querySelectorAll('.thumb').forEach(t => {
+        t.addEventListener('click', () => {
+          const tpl = t.dataset.tpl;
+          templateSelect.value = tpl;
+          data.meta.template = tpl;
+          save(); renderPreview();
         });
+      });
 
-        // Export CSV (simple flattened)
-        document.getElementById('exportCsv').addEventListener('click', () => {
-          // Flatten: basics + first experience + first education + skills
+      // CSV file input wiring (uses PapaParse when available)
+      csvFile.addEventListener('change', (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        if (!window.Papa) {
+          alert('CSV library not loaded yet. Try again in a moment.');
+          return;
+        }
+        Papa.parse(f, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results){
+            const rows = results.data;
+            if (!rows || rows.length === 0) return alert('CSV appears empty or invalid.');
+            const r0 = rows[0];
+            if (r0.name) data.basics.name = r0.name;
+            if (r0.title) data.basics.title = r0.title;
+            if (r0.email) data.basics.email = r0.email;
+            if (r0.phone) data.basics.phone = r0.phone;
+            if (r0.summary) data.basics.summary = r0.summary;
+            data.experiences = rows.filter(r => r.company || r.role).map(r => ({
+              id: uid('exp'),
+              company: r.company || '',
+              role: r.role || '',
+              period: r.period || '',
+              details: r.details || ''
+            }));
+            data.educations = rows.filter(r => r.institution || r.degree).map(r => ({
+              id: uid('edu'),
+              institution: r.institution || '',
+              degree: r.degree || '',
+              period: r.edu_period || r.period || ''
+            }));
+            if (r0.skills) {
+              const s = String(r0.skills).split(',').map(x=>x.trim()).filter(Boolean);
+              data.skills = Array.from(new Set((data.skills||[]).concat(s)));
+            }
+            save(); renderAll();
+            alert('CSV imported. Review fields and save.');
+          },
+          error: function(err){ alert('CSV import failed: ' + err.message) }
+        });
+      });
+
+      // Export JSON (immediate)
+      exportJsonBtn.addEventListener('click', () => {
+        const payload = JSON.stringify(data, null, 2);
+        const blob = new Blob([payload], {type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = (data.basics.name || 'resume') + '.json';
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      });
+
+      // Export CSV (immediate)
+      exportCsvBtn.addEventListener('click', () => {
+        if (!window.Papa) {
+          // simple fallback CSV creation
           const row = {
             name: data.basics.name || '',
             title: data.basics.title || '',
@@ -466,124 +454,140 @@
             edu_period: (data.educations[0] && data.educations[0].period) || '',
             skills: (data.skills || []).join(', ')
           };
-          const csv = Papa.unparse([row]);
+          const keys = Object.keys(row);
+          const csv = keys.join(',') + '\n' + keys.map(k => `"${String(row[k]||'').replace(/"/g,'""')}"`).join(',');
           const blob = new Blob([csv], {type:'text/csv'});
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url; a.download = (data.basics.name || 'resume') + '.csv';
           document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-        });
+          return;
+        }
+        // If Papa available, use it
+        const row = {
+          name: data.basics.name || '',
+          title: data.basics.title || '',
+          email: data.basics.email || '',
+          phone: data.basics.phone || '',
+          summary: data.basics.summary || '',
+          company: (data.experiences[0] && data.experiences[0].company) || '',
+          role: (data.experiences[0] && data.experiences[0].role) || '',
+          period: (data.experiences[0] && data.experiences[0].period) || '',
+          details: (data.experiences[0] && data.experiences[0].details) || '',
+          institution: (data.educations[0] && data.educations[0].institution) || '',
+          degree: (data.educations[0] && data.educations[0].degree) || '',
+          edu_period: (data.educations[0] && data.educations[0].period) || '',
+          skills: (data.skills || []).join(', ')
+        };
+        const csv = Papa.unparse([row]);
+        const blob = new Blob([csv], {type:'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = (data.basics.name || 'resume') + '.csv';
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      });
 
-        // Compact PDF export using html2canvas + jsPDF
-        document.getElementById('exportPdf').addEventListener('click', async () => {
-          try {
-            // Temporarily scale preview for better resolution
-            const node = preview;
-            const originalBg = node.style.backgroundColor;
-            node.style.backgroundColor = '#fff';
-            // Use html2canvas to capture
-            const canvas = await html2canvas(node, {
-              scale: 2,
-              useCORS: true,
-              backgroundColor: '#ffffff'
-            });
-            const imgData = canvas.toDataURL('image/jpeg', 0.85); // compact JPEG
-            const pdf = new jsPDF({
-              unit: 'pt',
-              format: 'a4',
-              compress: true
-            });
-            // Calculate image size to fit A4 width with margins
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const margin = 20;
-            const imgProps = { width: canvas.width, height: canvas.height };
-            const ratio = Math.min((pageWidth - margin*2) / imgProps.width, (pageHeight - margin*2) / imgProps.height);
-            const imgW = imgProps.width * ratio;
-            const imgH = imgProps.height * ratio;
-            pdf.addImage(imgData, 'JPEG', margin, margin, imgW, imgH, undefined, 'FAST');
-            // If content taller than one page, add additional pages
-            let remainingHeight = imgProps.height - (pageHeight - margin*2)/ratio;
-            let offsetY = (pageHeight - margin*2)/ratio;
-            while (remainingHeight > 0) {
-              pdf.addPage();
-              const sx = 0;
-              const sy = offsetY;
-              const sWidth = imgProps.width;
-              const sHeight = Math.min(imgProps.height - offsetY, (pageHeight - margin*2)/ratio);
-              // Create a temporary canvas to crop
-              const tmp = document.createElement('canvas');
-              tmp.width = sWidth;
-              tmp.height = sHeight;
-              const ctx = tmp.getContext('2d');
-              ctx.drawImage(canvas, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
-              const partData = tmp.toDataURL('image/jpeg', 0.85);
-              pdf.addImage(partData, 'JPEG', margin, margin, imgW, sHeight * ratio, undefined, 'FAST');
-              offsetY += sHeight;
-              remainingHeight -= sHeight;
-            }
-            const filename = (data.basics.name || 'resume') + '.pdf';
-            pdf.save(filename);
-            node.style.backgroundColor = originalBg;
-          } catch (err) {
-            alert('PDF export failed: ' + err.message);
-            console.error(err);
+      // PDF export: requires html2canvas + jsPDF; check availability at click time
+      exportPdfBtn.addEventListener('click', async () => {
+        if (!window.html2canvas || !window.jspdf) {
+          alert('PDF libraries are still loading. Please try again in a moment.');
+          return;
+        }
+        try {
+          const { jsPDF } = window.jspdf;
+          const node = preview;
+          const originalBg = node.style.backgroundColor;
+          node.style.backgroundColor = '#fff';
+          const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+          const imgData = canvas.toDataURL('image/jpeg', 0.85);
+          const pdf = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const margin = 20;
+          const imgProps = { width: canvas.width, height: canvas.height };
+          const ratio = Math.min((pageWidth - margin*2) / imgProps.width, (pageHeight - margin*2) / imgProps.height);
+          const imgW = imgProps.width * ratio;
+          const imgH = imgProps.height * ratio;
+          pdf.addImage(imgData, 'JPEG', margin, margin, imgW, imgH, undefined, 'FAST');
+          // Multi-page handling
+          let remainingHeight = imgProps.height - (pageHeight - margin*2)/ratio;
+          let offsetY = (pageHeight - margin*2)/ratio;
+          while (remainingHeight > 0) {
+            pdf.addPage();
+            const sx = 0;
+            const sy = offsetY;
+            const sWidth = imgProps.width;
+            const sHeight = Math.min(imgProps.height - offsetY, (pageHeight - margin*2)/ratio);
+            const tmp = document.createElement('canvas');
+            tmp.width = sWidth;
+            tmp.height = sHeight;
+            const ctx = tmp.getContext('2d');
+            ctx.drawImage(canvas, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
+            const partData = tmp.toDataURL('image/jpeg', 0.85);
+            pdf.addImage(partData, 'JPEG', margin, margin, imgW, sHeight * ratio, undefined, 'FAST');
+            offsetY += sHeight;
+            remainingHeight -= sHeight;
           }
-        });
+          const filename = (data.basics.name || 'resume') + '.pdf';
+          pdf.save(filename);
+          node.style.backgroundColor = originalBg;
+        } catch (err) {
+          alert('PDF export failed: ' + (err && err.message ? err.message : err));
+          console.error(err);
+        }
+      });
 
-        // Reset & clear storage
-        resetBtn.addEventListener('click', () => {
-          if (!confirm('Reset all data?')) return;
-          data = { meta:{template:'clean'}, basics:{name:'',title:'',email:'',phone:'',summary:''}, experiences:[], educations:[], skills:[] };
-          save(); renderAll();
-        });
-        clearStorage.addEventListener('click', () => {
-          if (!confirm('Clear autosaved data from this browser?')) return;
-          localStorage.removeItem(LS_KEY);
-          alert('Autosave cleared.');
-        });
+      // Reset & clear storage
+      resetBtn.addEventListener('click', () => {
+        if (!confirm('Reset all data?')) return;
+        data = { meta:{template:'clean'}, basics:{name:'',title:'',email:'',phone:'',summary:''}, experiences:[], educations:[], skills:[] };
+        save(); renderAll();
+      });
+      clearStorage.addEventListener('click', () => {
+        if (!confirm('Clear autosaved data from this browser?')) return;
+        localStorage.removeItem(LS_KEY);
+        alert('Autosave cleared.');
+      });
 
-        // Load sample
-        loadSample.addEventListener('click', () => {
-          data = {
-            meta:{template:'modern'},
-            basics:{name:'Alex Rivera', title:'Frontend Engineer', email:'alex.rivera@example.com', phone:'+63 912 345 6789', summary:'Frontend engineer with 5+ years building responsive web apps.'},
-            experiences:[
-              {id:uid('exp'), company:'BrightApps', role:'Senior Frontend Engineer', period:'2021 — Present', details:'Led UI rebuild; improved performance by 40%.'},
-              {id:uid('exp'), company:'WebWorks', role:'Frontend Developer', period:'2018 — 2021', details:'Built component library and design system.'}
-            ],
-            educations:[
-              {id:uid('edu'), institution:'State University', degree:'B.S. Computer Science', period:'2014 — 2018'}
-            ],
-            skills:['JavaScript','React','HTML','CSS']
-          };
-          save(); renderAll();
-        });
-      }
+      // Load sample
+      loadSample.addEventListener('click', () => {
+        data = {
+          meta:{template:'modern'},
+          basics:{name:'Alex Rivera', title:'Frontend Engineer', email:'alex.rivera@example.com', phone:'+63 912 345 6789', summary:'Frontend engineer with 5+ years building responsive web apps.'},
+          experiences:[
+            {id:uid('exp'), company:'BrightApps', role:'Senior Frontend Engineer', period:'2021 — Present', details:'Led UI rebuild; improved performance by 40%.'},
+            {id:uid('exp'), company:'WebWorks', role:'Frontend Developer', period:'2018 — 2021', details:'Built component library and design system.'}
+          ],
+          educations:[
+            {id:uid('edu'), institution:'State University', degree:'B.S. Computer Science', period:'2014 — 2018'}
+          ],
+          skills:['JavaScript','React','HTML','CSS']
+        };
+        save(); renderAll();
+      });
+    } // wireImmediate
 
-      // Render all to form & preview
-      function renderAll(){
-        fullName.value = data.basics.name || '';
-        jobTitle.value = data.basics.title || '';
-        email.value = data.basics.email || '';
-        phone.value = data.basics.phone || '';
-        summary.value = data.basics.summary || '';
-        templateSelect.value = data.meta.template || 'clean';
-        renderExperiences(); renderEducations(); renderSkills(); renderPreview();
-      }
+    // Render all to form & preview
+    function renderAll(){
+      fullName.value = data.basics.name || '';
+      jobTitle.value = data.basics.title || '';
+      email.value = data.basics.email || '';
+      phone.value = data.basics.phone || '';
+      summary.value = data.basics.summary || '';
+      templateSelect.value = data.meta.template || 'clean';
+      renderExperiences(); renderEducations(); renderSkills(); renderPreview();
+    }
 
-      // Initialize
-      function init(){
-        load();
-        wire();
-        renderAll();
-        // Autosave interval
-        setInterval(save, 2000);
-        window.addEventListener('beforeunload', save);
-      }
+    // Initialize
+    function init(){
+      load();
+      wireImmediate();
+      renderAll();
+      setInterval(save, 2000);
+      window.addEventListener('beforeunload', save);
+    }
 
-      init();
-    }); // whenReady
+    init();
   })();
   </script>
 </body>
