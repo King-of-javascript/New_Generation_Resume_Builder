@@ -6,46 +6,30 @@
 <title>Resume Builder Pro</title>
 
 <style>
-* {
-    box-sizing: border-box;
-    margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-}
-
 body {
+    margin: 0;
+    font-family: Arial;
     background: #eef1f5;
-}
-
-/* NAVBAR */
-.navbar {
-    background: #111827;
-    color: white;
-    padding: 15px 30px;
-    font-weight: bold;
-    font-size: 18px;
 }
 
 /* LAYOUT */
 .container {
     display: flex;
-    height: calc(100vh - 60px);
+    height: 100vh;
 }
 
-/* FORM SIDE */
 .form {
-    width: 50%;
-    padding: 25px;
+    width: 45%;
+    padding: 20px;
     overflow-y: auto;
 }
 
-/* PREVIEW SIDE */
 .preview {
-    width: 50%;
-    background: #dfe6ee;
+    width: 55%;
+    background: #ccc;
     display: flex;
     justify-content: center;
-    align-items: start;
-    padding: 30px;
+    padding: 20px;
 }
 
 /* CARD */
@@ -53,45 +37,41 @@ body {
     background: white;
     padding: 15px;
     margin-bottom: 15px;
-    border-radius: 10px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    border-radius: 8px;
 }
 
-/* INPUTS */
+/* INPUT */
 input, textarea {
     width: 100%;
-    padding: 10px;
-    margin-top: 8px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 10px;
 }
 
 /* BUTTONS */
 button {
-    margin-top: 10px;
-    padding: 10px;
+    padding: 8px 12px;
+    margin: 5px 2px;
     border: none;
+    cursor: pointer;
     background: #2563eb;
     color: white;
-    border-radius: 6px;
-    cursor: pointer;
 }
 
-button:hover {
-    background: #1d4ed8;
+.delete-btn {
+    background: red;
 }
 
-/* RESUME PREVIEW */
+/* RESUME STYLE */
 .resume {
+    width: 794px; /* A4 width */
+    min-height: 1123px;
     background: white;
-    width: 100%;
-    max-width: 700px;
-    padding: 30px;
-    border-radius: 10px;
+    padding: 40px;
 }
 
 .resume h1 {
-    margin-bottom: 5px;
+    margin: 0;
 }
 
 .section {
@@ -99,16 +79,31 @@ button:hover {
 }
 
 .section h3 {
-    border-bottom: 2px solid #2563eb;
+    border-bottom: 2px solid black;
     padding-bottom: 5px;
-    margin-bottom: 10px;
+}
+
+/* PRINT FIX */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    .resume, .resume * {
+        visibility: visible;
+    }
+
+    .resume {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
 }
 </style>
 </head>
 
 <body>
-
-<div class="navbar">Resume Builder Pro</div>
 
 <div class="container">
 
@@ -123,31 +118,29 @@ button:hover {
 
 <div class="card">
 <h3>Skills</h3>
-<textarea id="skills" placeholder="e.g. JavaScript, Leadership"></textarea>
+<textarea id="skills"></textarea>
 </div>
 
 <div class="card">
 <h3>Education</h3>
 <div id="edu"></div>
-<button onclick="addEdu()">+ Add Education</button>
+<button onclick="addEdu()">+ Add</button>
 </div>
 
 <div class="card">
 <h3>Experience</h3>
 <div id="exp"></div>
-<button onclick="addExp()">+ Add Experience</button>
+<button onclick="addExp()">+ Add</button>
 </div>
 
-<button onclick="generate()">Generate Resume</button>
+<button onclick="generate()">Generate</button>
 <button onclick="window.print()">Download PDF</button>
 
 </div>
 
 <!-- PREVIEW -->
 <div class="preview">
-<div class="resume" id="output">
-<h2>Your resume will appear here</h2>
-</div>
+<div class="resume" id="output"></div>
 </div>
 
 </div>
@@ -159,17 +152,31 @@ let expCount = 0;
 function addEdu() {
     eduCount++;
     document.getElementById("edu").innerHTML += `
-        <input placeholder="School" id="school${eduCount}">
-        <input placeholder="Year" id="year${eduCount}">
+        <div id="edu${eduCount}">
+            <input id="school${eduCount}" placeholder="School">
+            <input id="year${eduCount}" placeholder="Year">
+            <button class="delete-btn" onclick="removeEdu(${eduCount})">Delete</button>
+        </div>
     `;
+}
+
+function removeEdu(id) {
+    document.getElementById("edu"+id).remove();
 }
 
 function addExp() {
     expCount++;
     document.getElementById("exp").innerHTML += `
-        <input placeholder="Company" id="company${expCount}">
-        <textarea placeholder="Details" id="exp${expCount}"></textarea>
+        <div id="exp${expCount}">
+            <input id="company${expCount}" placeholder="Company">
+            <textarea id="desc${expCount}" placeholder="Details"></textarea>
+            <button class="delete-btn" onclick="removeExp(${expCount})">Delete</button>
+        </div>
     `;
+}
+
+function removeExp(id) {
+    document.getElementById("exp"+id).remove();
 }
 
 function generate() {
@@ -179,12 +186,20 @@ function generate() {
 
     let eduHTML = "";
     for (let i = 1; i <= eduCount; i++) {
-        eduHTML += `<p><b>${document.getElementById("school"+i).value}</b> (${document.getElementById("year"+i).value})</p>`;
+        let school = document.getElementById("school"+i);
+        let year = document.getElementById("year"+i);
+        if (school && year) {
+            eduHTML += `<p><b>${school.value}</b> (${year.value})</p>`;
+        }
     }
 
     let expHTML = "";
     for (let i = 1; i <= expCount; i++) {
-        expHTML += `<p><b>${document.getElementById("company"+i).value}</b><br>${document.getElementById("exp"+i).value}</p>`;
+        let company = document.getElementById("company"+i);
+        let desc = document.getElementById("desc"+i);
+        if (company && desc) {
+            expHTML += `<p><b>${company.value}</b><br>${desc.value}</p>`;
+        }
     }
 
     document.getElementById("output").innerHTML = `
