@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Resume Master — Single File Builder (Fixed)</title>
+  <title>Resume Master — Full Builder</title>
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Merriweather:wght@300;400;700&family=Roboto+Slab:wght@300;400;700&display=swap" rel="stylesheet">
 
-  <!-- External libs (CDN) -->
+  <!-- External libs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.2/papaparse.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 
   <style>
     :root{
@@ -27,7 +28,7 @@
     .btn{display:inline-block;background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;text-decoration:none;border:none;cursor:pointer}
     .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
     .btn.small{padding:6px 8px;font-size:.9rem}
-    .builder-grid{display:grid;grid-template-columns:1fr 420px;gap:18px;margin-top:18px}
+    .builder-grid{display:grid;grid-template-columns:1fr 480px;gap:18px;margin-top:18px}
     .card{background:var(--card);padding:14px;border-radius:var(--radius);box-shadow:0 6px 18px rgba(15,23,42,0.06)}
     form label{display:block;margin-bottom:8px;font-size:.95rem}
     input[type="text"], input[type="email"], input[type="tel"], textarea, select{
@@ -46,13 +47,32 @@
     .section h4{margin:0 0 6px 0;color:var(--accent)}
     .template-thumbs{display:flex;gap:8px;align-items:center}
     .thumb{width:72px;height:56px;border-radius:6px;border:1px solid #e6e9ee;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;background:#fff;cursor:pointer}
-    /* Template styles */
+    /* Template styles and print-optimized sizes */
     .tpl-clean{font-family:Arial, sans-serif}
+    .tpl-clean .resume-preview{font-size:11px;line-height:1.25}
+    .tpl-clean .resume-preview h2{font-size:16px}
+    .tpl-clean .resume-preview .section h4{font-size:12px}
     .tpl-modern{font-family:Inter, system-ui}
+    .tpl-modern .resume-preview{font-size:11px;line-height:1.25}
+    .tpl-modern .resume-preview h2{font-size:18px}
+    .tpl-modern .resume-preview .section h4{font-size:12.5px}
     .tpl-elegant{font-family:Merriweather, serif}
-    .tpl-clean .resume-header{border-color:#f0f0f0}
-    .tpl-modern h2{color:#0f172a}
-    .tpl-elegant h2{font-family:Merriweather, serif;color:#111}
+    .tpl-elegant .resume-preview{font-size:11.5px;line-height:1.28}
+    .tpl-elegant .resume-preview h2{font-size:18px}
+    .tpl-compact{font-family:Inter, system-ui}
+    .tpl-compact .resume-preview{font-size:10px;line-height:1.12;padding:10px}
+    .tpl-compact .resume-header{gap:8px}
+    .tpl-compact .resume-preview h2{font-size:15px}
+    /* Compact two-column skills/contact for wider screens */
+    .tpl-compact .resume-header{display:flex;gap:12px}
+    .tpl-compact .contact-block{min-width:160px;text-align:right;font-size:10px}
+    /* Tight spacing */
+    .resume-preview{padding:14px}
+    .resume-header{padding-bottom:6px;margin-bottom:8px}
+    .section{margin-bottom:8px}
+    .item{margin-bottom:6px}
+    /* Accessibility */
+    .resume-preview, .card, input, textarea { color-scheme: light; }
     /* Responsive */
     @media (max-width:980px){
       .builder-grid{grid-template-columns:1fr}
@@ -63,7 +83,17 @@
       header, .form-actions, .controls, .btn, .top-row a, .import-area{display:none}
       .builder-grid{grid-template-columns:1fr}
       .resume-preview{box-shadow:none;border-radius:0;padding:0}
+      .tpl-compact .resume-preview{font-size:10pt}
+      .tpl-modern .resume-preview{font-size:10pt}
+      .tpl-clean .resume-preview{font-size:10pt}
+      .tpl-elegant .resume-preview{font-size:10.5pt}
     }
+
+    /* Modal (CSV mapping) */
+    .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); z-index: 9999; }
+    .modal .modal-card { background: #fff; padding: 16px; border-radius: 8px; width: 90%; max-width: 720px; max-height: 80vh; overflow:auto; }
+    .field-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+    .field-row select { flex:1; }
   </style>
 </head>
 <body>
@@ -77,7 +107,8 @@
         <button class="btn" id="loadSample">Load Sample</button>
         <button class="btn ghost" id="exportJson">Export JSON</button>
         <button class="btn ghost" id="exportCsv">Export CSV</button>
-        <button class="btn" id="exportPdf">Compact PDF</button>
+        <button class="btn" id="exportPdfCompact">Compact PDF</button>
+        <button class="btn" id="exportPdfHigh">High fidelity PDF</button>
       </div>
     </div>
   </header>
@@ -128,11 +159,13 @@
               <option value="clean">Clean</option>
               <option value="modern">Modern</option>
               <option value="elegant">Elegant</option>
+              <option value="compact">Compact (one page)</option>
             </select>
-            <div class="template-thumbs">
+            <div class="template-thumbs" aria-hidden="true">
               <div class="thumb" data-tpl="clean">Clean</div>
               <div class="thumb" data-tpl="modern">Modern</div>
               <div class="thumb" data-tpl="elegant">Elegant</div>
+              <div class="thumb" data-tpl="compact">Compact</div>
             </div>
           </div>
 
@@ -141,6 +174,7 @@
               <input id="csvFile" type="file" accept=".csv" style="display:none" />
               Import CSV
             </label>
+            <button type="button" id="mapCsvBtn" class="btn ghost">Map CSV</button>
             <button type="button" id="resetBtn" class="btn ghost">Reset</button>
             <button type="button" id="clearStorage" class="btn small">Clear Autosave</button>
           </div>
@@ -152,9 +186,9 @@
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <strong>Live Preview</strong>
-            <div class="meta">Click skill pills to remove</div>
+            <div class="meta">Click skill pills to remove; use Shift+Enter for bullets</div>
           </div>
-          <div id="preview" class="resume-preview tpl-clean">
+          <div id="preview" class="resume-preview tpl-clean" role="region" aria-live="polite">
             <!-- Preview injected by JS -->
           </div>
         </div>
@@ -162,9 +196,22 @@
     </div>
   </main>
 
+  <!-- CSV mapping modal -->
+  <div id="csvModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card">
+      <h3>Map CSV Columns</h3>
+      <p>Map CSV columns to resume fields. Unmapped columns are ignored.</p>
+      <div id="mappingFields"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="applyMapping" class="btn">Apply</button>
+        <button id="closeMapping" class="btn ghost">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script>
   (function(){
-    // DOM refs (immediately available)
+    // DOM refs
     const fullName = document.getElementById('fullName');
     const jobTitle = document.getElementById('jobTitle');
     const email = document.getElementById('email');
@@ -181,12 +228,18 @@
     const csvFile = document.getElementById('csvFile');
     const exportJsonBtn = document.getElementById('exportJson');
     const exportCsvBtn = document.getElementById('exportCsv');
-    const exportPdfBtn = document.getElementById('exportPdf');
+    const exportPdfCompactBtn = document.getElementById('exportPdfCompact');
+    const exportPdfHighBtn = document.getElementById('exportPdfHigh');
     const resetBtn = document.getElementById('resetBtn');
     const clearStorage = document.getElementById('clearStorage');
     const loadSample = document.getElementById('loadSample');
+    const mapCsvBtn = document.getElementById('mapCsvBtn');
+    const csvModal = document.getElementById('csvModal');
+    const mappingFields = document.getElementById('mappingFields');
+    const applyMapping = document.getElementById('applyMapping');
+    const closeMapping = document.getElementById('closeMapping');
 
-    const LS_KEY = 'resume_master_single_v1';
+    const LS_KEY = 'resume_master_full_v1';
 
     // Data model
     let data = {
@@ -196,6 +249,10 @@
       educations: [],
       skills: []
     };
+
+    // CSV mapping state
+    let lastCsvHeaders = [];
+    let lastCsvRows = [];
 
     // Helpers
     function uid(p='id'){ return p + '_' + Math.random().toString(36).slice(2,9); }
@@ -221,7 +278,7 @@
             <label>Company <input data-id="${exp.id}" data-field="company" value="${exp.company || ''}" /></label>
             <label>Role <input data-id="${exp.id}" data-field="role" value="${exp.role || ''}" /></label>
             <label>Period <input data-id="${exp.id}" data-field="period" value="${exp.period || ''}" /></label>
-            <label>Details <textarea data-id="${exp.id}" data-field="details">${exp.details || ''}</textarea></label>
+            <label>Details (Shift+Enter for new bullet) <textarea data-id="${exp.id}" data-field="details">${exp.details || ''}</textarea></label>
             <div style="margin-top:6px"><button data-id="${exp.id}" class="btn small remove-exp">Remove</button></div>
           </div>
         `;
@@ -258,18 +315,33 @@
       });
     }
 
+    // Render details as bullets if multiple lines
+    function renderDetailsAsList(text){
+      if (!text) return '';
+      const lines = String(text).split(/\n+/).map(s=>s.trim()).filter(Boolean);
+      if (lines.length <= 1) return `<div>${escapeHtml(text)}</div>`;
+      return '<ul>' + lines.map(l=>`<li>${escapeHtml(l)}</li>`).join('') + '</ul>';
+    }
+
     function renderPreview(){
-      preview.className = 'resume-preview tpl-' + (data.meta.template || 'clean');
+      const tpl = data.meta.template || 'clean';
+      preview.className = 'resume-preview tpl-' + (tpl === 'compact' ? 'compact' : tpl);
+      // Contact block for compact template
+      const contactBlock = tpl === 'compact' ? `<div class="contact-block">
+        <div>${escapeHtml(data.basics.email || '')}</div>
+        <div>${escapeHtml(data.basics.phone || '')}</div>
+      </div>` : `<div class="meta" style="text-align:right">
+        <div>${escapeHtml(data.basics.email || '')}</div>
+        <div>${escapeHtml(data.basics.phone || '')}</div>
+      </div>`;
+
       preview.innerHTML = `
         <div class="resume-header">
           <div>
             <h2>${escapeHtml(data.basics.name || 'Your Name')}</h2>
             <div class="meta">${escapeHtml(data.basics.title || '')}</div>
           </div>
-          <div class="meta" style="text-align:right">
-            <div>${escapeHtml(data.basics.email || '')}</div>
-            <div>${escapeHtml(data.basics.phone || '')}</div>
-          </div>
+          ${contactBlock}
         </div>
 
         <div class="section">
@@ -283,7 +355,7 @@
             <div class="item">
               <strong>${escapeHtml(e.role || '')}</strong> — ${escapeHtml(e.company || '')}
               <div class="meta">${escapeHtml(e.period || '')}</div>
-              <div>${nl2br(e.details || '')}</div>
+              <div>${renderDetailsAsList(e.details || '')}</div>
             </div>
           `).join('')}
         </div>
@@ -305,7 +377,7 @@
       `;
     }
 
-    // Wire events immediately (so buttons are clickable even if libs load later)
+    // Wire events immediately
     function wireImmediate(){
       // Basic fields
       [fullName, jobTitle, email, phone, summary].forEach(el => {
@@ -369,14 +441,15 @@
 
       // Template selector & thumbs
       templateSelect.addEventListener('change', () => {
-        data.meta.template = templateSelect.value;
+        const val = templateSelect.value;
+        data.meta.template = val === 'compact' ? 'compact' : val;
         save(); renderPreview();
       });
       document.querySelectorAll('.thumb').forEach(t => {
         t.addEventListener('click', () => {
           const tpl = t.dataset.tpl;
-          templateSelect.value = tpl;
-          data.meta.template = tpl;
+          templateSelect.value = tpl === 'compact' ? 'compact' : tpl;
+          data.meta.template = tpl === 'compact' ? 'compact' : tpl;
           save(); renderPreview();
         });
       });
@@ -395,37 +468,22 @@
           complete: function(results){
             const rows = results.data;
             if (!rows || rows.length === 0) return alert('CSV appears empty or invalid.');
-            const r0 = rows[0];
-            if (r0.name) data.basics.name = r0.name;
-            if (r0.title) data.basics.title = r0.title;
-            if (r0.email) data.basics.email = r0.email;
-            if (r0.phone) data.basics.phone = r0.phone;
-            if (r0.summary) data.basics.summary = r0.summary;
-            data.experiences = rows.filter(r => r.company || r.role).map(r => ({
-              id: uid('exp'),
-              company: r.company || '',
-              role: r.role || '',
-              period: r.period || '',
-              details: r.details || ''
-            }));
-            data.educations = rows.filter(r => r.institution || r.degree).map(r => ({
-              id: uid('edu'),
-              institution: r.institution || '',
-              degree: r.degree || '',
-              period: r.edu_period || r.period || ''
-            }));
-            if (r0.skills) {
-              const s = String(r0.skills).split(',').map(x=>x.trim()).filter(Boolean);
-              data.skills = Array.from(new Set((data.skills||[]).concat(s)));
-            }
-            save(); renderAll();
-            alert('CSV imported. Review fields and save.');
+            lastCsvRows = rows;
+            lastCsvHeaders = Object.keys(rows[0] || {});
+            // Open mapping modal prefilled
+            openMappingModal(lastCsvHeaders);
           },
           error: function(err){ alert('CSV import failed: ' + err.message) }
         });
       });
 
-      // Export JSON (immediate)
+      // Map CSV button (open modal if CSV already loaded)
+      mapCsvBtn.addEventListener('click', () => {
+        if (!lastCsvHeaders.length) return alert('Choose a CSV file first (Import CSV).');
+        openMappingModal(lastCsvHeaders);
+      });
+
+      // Export JSON
       exportJsonBtn.addEventListener('click', () => {
         const payload = JSON.stringify(data, null, 2);
         const blob = new Blob([payload], {type:'application/json'});
@@ -435,35 +493,8 @@
         document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
       });
 
-      // Export CSV (immediate)
+      // Export CSV
       exportCsvBtn.addEventListener('click', () => {
-        if (!window.Papa) {
-          // simple fallback CSV creation
-          const row = {
-            name: data.basics.name || '',
-            title: data.basics.title || '',
-            email: data.basics.email || '',
-            phone: data.basics.phone || '',
-            summary: data.basics.summary || '',
-            company: (data.experiences[0] && data.experiences[0].company) || '',
-            role: (data.experiences[0] && data.experiences[0].role) || '',
-            period: (data.experiences[0] && data.experiences[0].period) || '',
-            details: (data.experiences[0] && data.experiences[0].details) || '',
-            institution: (data.educations[0] && data.educations[0].institution) || '',
-            degree: (data.educations[0] && data.educations[0].degree) || '',
-            edu_period: (data.educations[0] && data.educations[0].period) || '',
-            skills: (data.skills || []).join(', ')
-          };
-          const keys = Object.keys(row);
-          const csv = keys.join(',') + '\n' + keys.map(k => `"${String(row[k]||'').replace(/"/g,'""')}"`).join(',');
-          const blob = new Blob([csv], {type:'text/csv'});
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url; a.download = (data.basics.name || 'resume') + '.csv';
-          document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-          return;
-        }
-        // If Papa available, use it
         const row = {
           name: data.basics.name || '',
           title: data.basics.title || '',
@@ -479,16 +510,26 @@
           edu_period: (data.educations[0] && data.educations[0].period) || '',
           skills: (data.skills || []).join(', ')
         };
-        const csv = Papa.unparse([row]);
-        const blob = new Blob([csv], {type:'text/csv'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = (data.basics.name || 'resume') + '.csv';
-        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        if (window.Papa) {
+          const csv = Papa.unparse([row]);
+          const blob = new Blob([csv], {type:'text/csv'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = (data.basics.name || 'resume') + '.csv';
+          document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        } else {
+          const keys = Object.keys(row);
+          const csv = keys.join(',') + '\n' + keys.map(k => `"${String(row[k]||'').replace(/"/g,'""')}"`).join(',');
+          const blob = new Blob([csv], {type:'text/csv'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = (data.basics.name || 'resume') + '.csv';
+          document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        }
       });
 
-      // PDF export: requires html2canvas + jsPDF; check availability at click time
-      exportPdfBtn.addEventListener('click', async () => {
+      // Compact PDF export (html2canvas + jsPDF)
+      exportPdfCompactBtn.addEventListener('click', async () => {
         if (!window.html2canvas || !window.jspdf) {
           alert('PDF libraries are still loading. Please try again in a moment.');
           return;
@@ -499,7 +540,7 @@
           const originalBg = node.style.backgroundColor;
           node.style.backgroundColor = '#fff';
           const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-          const imgData = canvas.toDataURL('image/jpeg', 0.85);
+          const imgData = canvas.toDataURL('image/jpeg', 0.9);
           const pdf = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
           const pageWidth = pdf.internal.pageSize.getWidth();
           const pageHeight = pdf.internal.pageSize.getHeight();
@@ -523,7 +564,7 @@
             tmp.height = sHeight;
             const ctx = tmp.getContext('2d');
             ctx.drawImage(canvas, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
-            const partData = tmp.toDataURL('image/jpeg', 0.85);
+            const partData = tmp.toDataURL('image/jpeg', 0.9);
             pdf.addImage(partData, 'JPEG', margin, margin, imgW, sHeight * ratio, undefined, 'FAST');
             offsetY += sHeight;
             remainingHeight -= sHeight;
@@ -533,6 +574,35 @@
           node.style.backgroundColor = originalBg;
         } catch (err) {
           alert('PDF export failed: ' + (err && err.message ? err.message : err));
+          console.error(err);
+        }
+      });
+
+      // High-fidelity PDF export (html2pdf.js) - preserves selectable text where possible
+      exportPdfHighBtn.addEventListener('click', async () => {
+        if (!window.html2pdf) {
+          alert('High-fidelity PDF library is still loading. Try again in a moment.');
+          return;
+        }
+        try {
+          const opt = {
+            margin:       10,
+            filename:     (data.basics.name || 'resume') + '.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+            jsPDF:        { unit: 'pt', format: 'a4', orientation: 'portrait' },
+            enableLinks: true
+          };
+          // Use a clone to avoid layout shifts
+          const clone = preview.cloneNode(true);
+          clone.style.boxShadow = 'none';
+          clone.style.margin = '0';
+          clone.style.background = '#fff';
+          document.body.appendChild(clone);
+          await html2pdf().set(opt).from(clone).save();
+          clone.remove();
+        } catch (err) {
+          alert('High-fidelity PDF export failed: ' + (err && err.message ? err.message : err));
           console.error(err);
         }
       });
@@ -555,8 +625,8 @@
           meta:{template:'modern'},
           basics:{name:'Alex Rivera', title:'Frontend Engineer', email:'alex.rivera@example.com', phone:'+63 912 345 6789', summary:'Frontend engineer with 5+ years building responsive web apps.'},
           experiences:[
-            {id:uid('exp'), company:'BrightApps', role:'Senior Frontend Engineer', period:'2021 — Present', details:'Led UI rebuild; improved performance by 40%.'},
-            {id:uid('exp'), company:'WebWorks', role:'Frontend Developer', period:'2018 — 2021', details:'Built component library and design system.'}
+            {id:uid('exp'), company:'BrightApps', role:'Senior Frontend Engineer', period:'2021 — Present', details:'Led UI rebuild; improved performance by 40%.\nImplemented accessibility improvements.'},
+            {id:uid('exp'), company:'WebWorks', role:'Frontend Developer', period:'2018 — 2021', details:'Built component library and design system.\nCollaborated with designers to ship features.'}
           ],
           educations:[
             {id:uid('edu'), institution:'State University', degree:'B.S. Computer Science', period:'2014 — 2018'}
@@ -565,6 +635,92 @@
         };
         save(); renderAll();
       });
+
+      // Mapping modal handlers
+      function openMappingModal(headers){
+        mappingFields.innerHTML = '';
+        csvModal.style.display = 'flex';
+        csvModal.setAttribute('aria-hidden','false');
+        // Fields to map
+        const fields = [
+          {key:'name', label:'Full name'},
+          {key:'title', label:'Job title'},
+          {key:'email', label:'Email'},
+          {key:'phone', label:'Phone'},
+          {key:'summary', label:'Summary'},
+          {key:'company', label:'Company (experience)'},
+          {key:'role', label:'Role (experience)'},
+          {key:'period', label:'Period (experience)'},
+          {key:'details', label:'Details (experience)'},
+          {key:'institution', label:'Institution (education)'},
+          {key:'degree', label:'Degree (education)'},
+          {key:'edu_period', label:'Period (education)'},
+          {key:'skills', label:'Skills (comma separated)'}
+        ];
+        fields.forEach(f => {
+          const row = document.createElement('div');
+          row.className = 'field-row';
+          const lbl = document.createElement('div');
+          lbl.style.width='180px';
+          lbl.textContent = f.label;
+          const sel = document.createElement('select');
+          sel.dataset.field = f.key;
+          const emptyOpt = document.createElement('option');
+          emptyOpt.value = '';
+          emptyOpt.textContent = '(none)';
+          sel.appendChild(emptyOpt);
+          headers.forEach(h => {
+            const o = document.createElement('option');
+            o.value = h; o.textContent = h;
+            sel.appendChild(o);
+          });
+          row.appendChild(lbl);
+          row.appendChild(sel);
+          mappingFields.appendChild(row);
+        });
+      }
+      applyMapping.addEventListener('click', () => {
+        // Read mapping
+        const selects = mappingFields.querySelectorAll('select');
+        const map = {};
+        selects.forEach(s => { if (s.value) map[s.dataset.field] = s.value; });
+        if (!lastCsvRows.length) { alert('No CSV loaded.'); return; }
+        // Apply mapping: basics from first row
+        const r0 = lastCsvRows[0];
+        if (map.name && r0[map.name]) data.basics.name = r0[map.name];
+        if (map.title && r0[map.title]) data.basics.title = r0[map.title];
+        if (map.email && r0[map.email]) data.basics.email = r0[map.email];
+        if (map.phone && r0[map.phone]) data.basics.phone = r0[map.phone];
+        if (map.summary && r0[map.summary]) data.basics.summary = r0[map.summary];
+        // Experiences: any row with company or role mapped
+        data.experiences = lastCsvRows.filter(r => (map.company && r[map.company]) || (map.role && r[map.role])).map(r => ({
+          id: uid('exp'),
+          company: map.company ? (r[map.company]||'') : '',
+          role: map.role ? (r[map.role]||'') : '',
+          period: map.period ? (r[map.period]||'') : '',
+          details: map.details ? (r[map.details]||'') : ''
+        }));
+        // Educations
+        data.educations = lastCsvRows.filter(r => (map.institution && r[map.institution]) || (map.degree && r[map.degree])).map(r => ({
+          id: uid('edu'),
+          institution: map.institution ? (r[map.institution]||'') : '',
+          degree: map.degree ? (r[map.degree]||'') : '',
+          period: map.edu_period ? (r[map.edu_period]||'') : (map.period ? (r[map.period]||'') : '')
+        }));
+        // Skills
+        if (map.skills && r0[map.skills]) {
+          const s = String(r0[map.skills]).split(',').map(x=>x.trim()).filter(Boolean);
+          data.skills = Array.from(new Set((data.skills||[]).concat(s)));
+        }
+        save(); renderAll();
+        csvModal.style.display = 'none';
+        csvModal.setAttribute('aria-hidden','true');
+      });
+      closeMapping.addEventListener('click', () => {
+        csvModal.style.display = 'none';
+        csvModal.setAttribute('aria-hidden','true');
+      });
+
     } // wireImmediate
 
     // Render all to form & preview
@@ -574,7 +730,7 @@
       email.value = data.basics.email || '';
       phone.value = data.basics.phone || '';
       summary.value = data.basics.summary || '';
-      templateSelect.value = data.meta.template || 'clean';
+      templateSelect.value = data.meta.template === 'compact' ? 'compact' : (data.meta.template || 'clean');
       renderExperiences(); renderEducations(); renderSkills(); renderPreview();
     }
 
